@@ -228,7 +228,7 @@ export namespace Session {
       const read = await Storage.readJSON<MessageV2.Info>(p)
       result.push({
         info: read,
-        parts: await parts(sessionID, read.id),
+        parts: await getParts(sessionID, read.id),
       })
     }
     result.sort((a, b) => (a.info.id > b.info.id ? 1 : -1))
@@ -239,7 +239,7 @@ export namespace Session {
     return Storage.readJSON<MessageV2.Info>("session/message/" + sessionID + "/" + messageID)
   }
 
-  export async function parts(sessionID: string, messageID: string) {
+  export async function getParts(sessionID: string, messageID: string) {
     const result = [] as MessageV2.Part[]
     for (const item of await Storage.list("session/part/" + sessionID + "/" + messageID)) {
       const read = await Storage.readJSON<MessageV2.Part>(item)
@@ -352,7 +352,10 @@ export namespace Session {
     const model = await Provider.getModel(input.providerID, input.modelID)
     let msgs = await messages(input.sessionID)
     const session = await get(input.sessionID)
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     const previous = msgs.filter((x) => x.info.role === "assistant").at(-1)?.info as MessageV2.Assistant
     const outputLimit = Math.min(model.info.limit.output, OUTPUT_TOKEN_MAX) || OUTPUT_TOKEN_MAX
 
@@ -923,7 +926,7 @@ export namespace Session {
             error: assistantMsg.error,
           })
         }
-        const p = await parts(assistantMsg.sessionID, assistantMsg.id)
+        const p = await getParts(assistantMsg.sessionID, assistantMsg.id)
         for (const part of p) {
           if (part.type === "tool" && part.state.status !== "completed") {
             updatePart({
@@ -947,7 +950,46 @@ export namespace Session {
     }
   }
 
+<<<<<<< Updated upstream
   export async function revert(_input: { sessionID: string; messageID: string; part: number }) {}
+=======
+  export async function revert(input: { sessionID: string; messageID: string; partID: string }) {
+    const message = await getMessage(input.sessionID, input.messageID)
+    const parts = await getParts(input.sessionID, input.messageID)
+    const index = parts.findIndex((x) => x.id === input.partID)
+
+    // TODO
+    /*
+    const message = await getMessage(input.sessionID, input.messageID)
+    if (!message) return
+    const part = message.parts[input.part]
+    if (!part) return
+    const session = await get(input.sessionID)
+    const snapshot =
+      session.revert?.snapshot ?? (await Snapshot.create(input.sessionID))
+    const old = (() => {
+      if (message.role === "assistant") {
+        const lastTool = message.parts.findLast(
+          (part, index) =>
+            part.type === "tool-invocation" && index < input.part,
+        )
+        if (lastTool && lastTool.type === "tool-invocation")
+          return message.metadata.tool[lastTool.toolInvocation.toolCallId]
+            .snapshot
+      }
+      return message.metadata.snapshot
+    })()
+    if (old) await Snapshot.restore(input.sessionID, old)
+    await update(input.sessionID, (draft) => {
+      draft.revert = {
+        messageID: input.messageID,
+        part: input.part,
+        snapshot,
+      }
+    })
+    */
+  }
+>>>>>>> Stashed changes
 
   export async function summarize(input: { sessionID: string; providerID: string; modelID: string }) {
     using abort = lock(input.sessionID)
