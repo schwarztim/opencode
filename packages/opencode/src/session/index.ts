@@ -1075,7 +1075,7 @@ export namespace Session {
         if ((msg.info.id === input.messageID && !input.partID) || part.id === input.partID) {
           // if no useful parts left in message, same as reverting whole message
           const partID = remaining.some((item) => ["text", "tool"].includes(item.type)) ? input.partID : undefined
-          const snapshot = session.revert?.snapshot ?? (await Snapshot.create(input.sessionID))
+          const snapshot = session.revert?.snapshot ?? (await Snapshot.create(input.sessionID, true))
           log.info("revert snapshot", { snapshot })
           if (lastSnapshot) await Snapshot.restore(input.sessionID, lastSnapshot.snapshot)
           const next = await update(input.sessionID, (draft) => {

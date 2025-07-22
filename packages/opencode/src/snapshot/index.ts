@@ -8,7 +8,7 @@ import { Log } from "../util/log"
 export namespace Snapshot {
   const log = Log.create({ service: "snapshot" })
 
-  export async function create(sessionID: string) {
+  export async function create(sessionID: string, force?: boolean) {
     log.info("creating snapshot")
     const app = App.info()
 
@@ -40,7 +40,7 @@ export namespace Snapshot {
     log.info("added files")
 
     const result =
-      await $`git --git-dir ${git} commit -m "snapshot" --no-gpg-sign --author="opencode <mail@opencode.ai>"`
+      await $`git --git-dir ${git} commit ${force ? "--allow-empty" : ""} -m "snapshot" --no-gpg-sign --author="opencode <mail@opencode.ai>"`
         .quiet()
         .cwd(app.path.cwd)
         .nothrow()
