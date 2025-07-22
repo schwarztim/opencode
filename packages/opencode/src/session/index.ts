@@ -1092,6 +1092,7 @@ export namespace Session {
   }
 
   export async function unrevert(input: { sessionID: string }) {
+    log.info("unreverting", input)
     const session = await get(input.sessionID)
     if (!session.revert) return session
     if (session.revert.snapshot) await Snapshot.restore(input.sessionID, session.revert.snapshot)
