@@ -2,6 +2,7 @@ import { spawn } from "node:child_process"
 import { lazy } from "./lazy"
 import { createOpencodeClient } from "@opencode-ai/sdk"
 import { Git } from "./git"
+import { Auth } from "./auth"
 
 export namespace Opencode {
   const HOST = "127.0.0.1"
@@ -56,6 +57,10 @@ export namespace Opencode {
     const session = await client()
       .session.create<true>()
       .then((r) => r.data)
+
+    // Add GH_TOKEN for llm to use `gh` cli
+    process.env["GH_TOKEN"] = await Auth.token()
+
     const chat = await client().session.chat<true>({
       path: session,
       body: {
