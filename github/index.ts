@@ -48,12 +48,12 @@ try {
   // 3. Fork PR
   if (isPullRequest()) {
     const prData = await fetchPR()
+    const dataPrompt = buildPromptDataForPR(prData)
+    console.log("!!!@#!@ dataPrompt", dataPrompt)
     // Local PR
     if (prData.headRepository.nameWithOwner === prData.baseRepository.nameWithOwner) {
       await checkoutLocalBranch(prData)
-      const dataPrompt = buildPromptDataForPR(prData)
       // TODO
-      console.log("!!!@#!@ dataPrompt", dataPrompt)
       const response = await chat(`${userPrompt}\n\n${dataPrompt}`, promptFiles)
       if (await branchIsDirty()) {
         const summary = await summarize(response)
@@ -65,7 +65,6 @@ try {
     // Fork PR
     else {
       await checkoutForkBranch(prData)
-      const dataPrompt = buildPromptDataForPR(prData)
       const response = await chat(`${userPrompt}\n\n${dataPrompt}`, promptFiles)
       if (await branchIsDirty()) {
         const summary = await summarize(response)
@@ -190,6 +189,12 @@ function useIssueId() {
   if (isEventPullRequestReviewComment())
     return Context.payload<PullRequestReviewCommentCreatedEvent>().pull_request.number
   return Context.payload<IssueCommentEvent>().issue.number
+}
+
+function useIssueTitle() {
+  if (isEventPullRequestReviewComment())
+    return Context.payload<PullRequestReviewCommentCreatedEvent>().pull_request.title
+  return Context.payload<IssueCommentEvent>().issue.title
 }
 
 function useShareUrl() {
@@ -360,9 +365,7 @@ async function summarize(response: string) {
   try {
     return await chat(`Summarize the following in less than 40 characters:\n\n${response}`)
   } catch (e) {
-    return isEventPullRequestReviewComment()
-      ? `Fix issue: ${Context.payload<PullRequestReviewCommentCreatedEvent>().pull_request.title}`
-      : `Fix issue: ${Context.payload<IssueCommentEvent>().issue.title}`
+    return `Fix issue: ${useIssueTitle()}`
   }
 }
 
@@ -667,6 +670,22 @@ async function fetchPR() {
           id
           isResolved
           isOutdated
+          comments(first: 100) {
+            nodes {
+              id
+              databaseId
+              body
+              path
+              line
+              author {
+                login
+              }
+              createdAt
+              pullRequestReview {
+                id
+              }
+            }
+          }
         }
       }
       reviews(first: 100) {
@@ -679,20 +698,6 @@ async function fetchPR() {
           body
           state
           submittedAt
-          comments(first: 100) {
-            nodes {
-              id
-              databaseId
-              threadId
-              body
-              path
-              line
-              author {
-                login
-              }
-              createdAt
-            }
-          }
         }
       }`
 
@@ -746,18 +751,22 @@ ${part}
   if (!pr) throw new Error(`PR #${useIssueId()} not found`)
 
   if (isEventPullRequestReviewComment()) {
-    const comment = Context.payload<PullRequestReviewCommentCreatedEvent>().comment
+    const triggerComment = Context.payload<PullRequestReviewCommentCreatedEvent>().comment
     pr.reviewThreads.nodes = pr.reviewThreads.nodes.filter((t) =>
-      t.comments.nodes.some((c) => c.id === comment.node_id),
+      t.comments.nodes.some((c) => c.id === triggerComment.node_id),
     )
-    if (pr.reviewThreads.nodes.length === 0) throw new Error(`Review thread for comment ${comment.node_id} not found`)
+    if (pr.reviewThreads.nodes.length === 0)
+      throw new Error(`Review thread for comment ${triggerComment.node_id} not found`)
   } else {
-    const ignoreThreads = pr.reviewThreads.nodes.map((t) => t.id)
-    pr.reviews.nodes = pr.reviews.nodes.filter((r) => {
-      r.comments.nodes = r.comments.nodes.filter((c) => !ignoreThreads.includes(c.threadId))
-      return r.comments.nodes.length > 0
+    const ignoreReviewIds = new Set<string>()
+    pr.reviewThreads.nodes = pr.reviewThreads.nodes.filter((t) => {
+      if (t.isOutdated || t.isResolved) {
+        t.comments.nodes.forEach((c) => ignoreReviewIds.add(c.pullRequestReview.id))
+        return false
+      }
+      return true
     })
-    pr.reviewThreads.nodes = []
+    pr.reviews.nodes = pr.reviews.nodes.filter((r) => !ignoreReviewIds.has(r.id))
   }
 
   return pr
@@ -804,16 +813,7 @@ function buildPromptDataForPR(pr: GitHubPullRequest) {
       if (reviews.length === 0) return []
       return [
         "<pull_request_reviews>",
-        ...reviews.map((r) => [
-          `- ${r.author.login} at ${r.submittedAt}:`,
-          `  - Review body: ${r.body}`,
-          ...(() => {
-            const comments = r.comments.nodes ?? []
-            if (comments.length === 0) return []
-
-            return ["  - Comments:", ...comments.map((c) => `    - ${c.path}:${c.line ?? "?"}: ${c.body}`)]
-          })(),
-        ]),
+        ...reviews.map((r) => ["<review>", `${r.author.login} at ${r.submittedAt}: ${r.body}`, "</review>"]),
         "</pull_request_reviews>",
       ]
     })(),
@@ -822,7 +822,11 @@ function buildPromptDataForPR(pr: GitHubPullRequest) {
       if (threads.length === 0) return []
       return [
         "<pull_request_threads>",
-        ...threads.map((r) => r.comments.nodes.map((c) => `- ${c.path}:${c.line ?? "?"}: ${c.body}`)),
+        ...threads.map((r) => [
+          "<thread>",
+          ...r.comments.nodes.map((c) => ["<comment>", `${c.path}:${c.line ?? "?"}: ${c.body}`, "</comment>"]),
+          "</thread>",
+        ]),
         "</pull_request_threads>",
       ]
     })(),

@@ -15,6 +15,9 @@ type GitHubReviewComment = GitHubComment & {
   path: string
   line: number | null
   threadId: string
+  pullRequestReview: {
+    id: string
+  }
 }
 
 type GitHubCommit = {
@@ -40,9 +43,6 @@ type GitHubReview = {
   body: string
   state: string
   submittedAt: string
-  comments: {
-    nodes: GitHubReviewComment[]
-  }
 }
 
 export type GitHubPullRequest = {
@@ -80,7 +80,8 @@ export type GitHubPullRequest = {
   reviewThreads: {
     nodes: {
       id: string
-      isResolved?: boolean
+      isResolved: boolean
+      isOutdated: boolean
       comments: {
         nodes: GitHubReviewComment[]
       }
