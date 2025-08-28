@@ -40,11 +40,12 @@ Keep the reason short and concise, only one sentence.
 If the check passed, do not create any file.
       `)
 
-    // check file exists
+    // parse for reason
+    let reason
     try {
-      const reason = await Bun.file(filename).text()
-      if (reason) throw new Error(reason)
+      reason = await Bun.file(filename).text()
     } catch (e) {}
+    if (reason) throw new Error(reason)
   } finally {
     Opencode.closeServer()
     await Auth.revoke()
