@@ -1202,7 +1202,7 @@ export type ProjectListResponses = {
 
 export type ProjectListResponse = ProjectListResponses[keyof ProjectListResponses]
 
-export type ButtCurrentData = {
+export type ProjectCurrentData = {
   body?: never
   path?: never
   query?: {
@@ -1211,14 +1211,14 @@ export type ButtCurrentData = {
   url: "/project/current"
 }
 
-export type ButtCurrentResponses = {
+export type ProjectCurrentResponses = {
   /**
    * Current project
    */
   200: Project
 }
 
-export type ButtCurrentResponse = ButtCurrentResponses[keyof ButtCurrentResponses]
+export type ProjectCurrentResponse = ProjectCurrentResponses[keyof ProjectCurrentResponses]
 
 export type EventSubscribeData = {
   body?: never

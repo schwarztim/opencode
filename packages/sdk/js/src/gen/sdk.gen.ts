@@ -4,8 +4,8 @@ import type { Options as ClientOptions, TDataShape, Client } from "./client/inde
 import type {
   ProjectListData,
   ProjectListResponses,
-  ButtCurrentData,
-  ButtCurrentResponses,
+  ProjectCurrentData,
+  ProjectCurrentResponses,
   EventSubscribeData,
   EventSubscribeResponses,
   ConfigGetData,
@@ -132,14 +132,12 @@ class Project extends _HeyApiClient {
       ...options,
     })
   }
-}
 
-class Butt extends _HeyApiClient {
   /**
    * Get the current project
    */
-  public current<ThrowOnError extends boolean = false>(options?: Options<ButtCurrentData, ThrowOnError>) {
-    return (options?.client ?? this._client).get<ButtCurrentResponses, unknown, ThrowOnError>({
+  public current<ThrowOnError extends boolean = false>(options?: Options<ProjectCurrentData, ThrowOnError>) {
+    return (options?.client ?? this._client).get<ProjectCurrentResponses, unknown, ThrowOnError>({
       url: "/project/current",
       ...options,
     })
@@ -649,7 +647,6 @@ export class OpencodeClient extends _HeyApiClient {
     })
   }
   project = new Project({ client: this._client })
-  butt = new Butt({ client: this._client })
   event = new Event({ client: this._client })
   config = new Config({ client: this._client })
   path = new Path({ client: this._client })
