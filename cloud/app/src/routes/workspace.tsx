@@ -30,7 +30,9 @@ const logout = action(async () => {
 })
 
 export default function WorkspaceLayout(props: RouteSectionProps) {
-  const userInfo = createAsync(() => getUserInfo())
+  const userInfo = createAsync(() => getUserInfo(), {
+    deferStream: true,
+  })
   return (
     <main data-page="workspace">
       <header data-component="workspace-header">
@@ -40,9 +42,7 @@ export default function WorkspaceLayout(props: RouteSectionProps) {
           </a>
         </div>
         <div data-slot="header-actions">
-          {userInfo() &&
-            <span>{userInfo()!.user.email}</span>
-          }
+          <span>{userInfo()?.user.email}</span>
           <form action={logout} method="post">
             <button type="submit" formaction={logout}>Logout</button>
           </form>
