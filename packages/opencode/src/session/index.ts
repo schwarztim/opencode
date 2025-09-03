@@ -1266,35 +1266,36 @@ export namespace Session {
       },
     ] as ChatInput["parts"]
 
-    for (const match of template.matchAll(fileRegex)) {
-      const name = match[1]
-      const filepath = name.startsWith("~/")
-        ? path.join(os.homedir(), name.slice(2))
-        : path.resolve(Instance.worktree, name)
+    const matches = Array.from(template.matchAll(fileRegex))
+    await Promise.all(
+      matches.map(async (match) => {
+        const name = match[1]
+        const filepath = name.startsWith("~/")
+          ? path.join(os.homedir(), name.slice(2))
+          : path.resolve(Instance.worktree, name)
 
-      const stats = await fs.stat(filepath).catch(() => undefined)
-      if (!stats) {
-        // if the file doesn't exist, try to resolve potential agent reference
-        const agent = await Agent.get(name)
-        if (agent) {
-          parts.push({
-            type: "agent",
-            name: agent.name,
-          })
+        const stats = await fs.stat(filepath).catch(() => undefined)
+        if (!stats) {
+          const agent = await Agent.get(name)
+          if (agent) {
+            parts.push({
+              type: "agent",
+              name: agent.name,
+            })
+          }
+          return
         }
-        continue
-      }
 
-      // @ directories is not currently supported
-      if (stats.isDirectory()) continue
+        if (stats.isDirectory()) return
 
-      parts.push({
-        type: "file",
-        url: `file://${filepath}`,
-        filename: name,
-        mime: "text/plain",
-      })
-    }
+        parts.push({
+          type: "file",
+          url: `file://${filepath}`,
+          filename: name,
+          mime: "text/plain",
+        })
+      }),
+    )
 
     return prompt({
       sessionID: input.sessionID,
