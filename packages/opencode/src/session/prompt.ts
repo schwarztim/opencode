@@ -228,6 +228,20 @@ export namespace SessionPrompt {
       await using _ = defer(async () => {
         await processor.end()
       })
+      const messages = [
+        ...system.map(
+          (x): ModelMessage => ({
+            role: "system",
+            content: x,
+          }),
+        ),
+        ...MessageV2.toModelMessage(
+          msgs.filter(
+            (m) => !(m.info.role === "assistant" && m.info.error && !MessageV2.AbortedError.isInstance(m.info.error)),
+          ),
+        ),
+      ]
+      await fs.writeFile("msgs.json", JSON.stringify(messages, null, 2))
       const stream = streamText({
         onError(error) {
           log.error("stream error", {
@@ -272,19 +286,7 @@ export namespace SessionPrompt {
         stopWhen: stepCountIs(1),
         temperature: params.temperature,
         topP: params.topP,
-        messages: [
-          ...system.map(
-            (x): ModelMessage => ({
-              role: "system",
-              content: x,
-            }),
-          ),
-          ...MessageV2.toModelMessage(
-            msgs.filter(
-              (m) => !(m.info.role === "assistant" && m.info.error && !MessageV2.AbortedError.isInstance(m.info.error)),
-            ),
-          ),
-        ],
+        messages,
         tools: model.info.tool_call === false ? undefined : tools,
         model: wrapLanguageModel({
           model: model.language,
