@@ -214,10 +214,10 @@ function ToolPart(props: { part: ToolPart; message: AssistantMessage }) {
     return (
       <box
         {...container}
-        onSizeChange={function () {
-          setTimeout(() => {
-            resize(this)
-          }, 0)
+        ref={(r) => {
+          r.renderAfter = function () {
+            resize(this as BoxRenderable)
+          }
         }}
       >
         <Dynamic
@@ -438,19 +438,12 @@ ToolRegistry.register<typeof TaskTool>({
 
 ToolRegistry.register<typeof WebFetchTool>({
   name: "webfetch",
-  container: "block",
+  container: "inline",
   ready(props) {
     return (
-      <>
-        <ToolTitle icon="%" fallback="Fetching from the web..." when={(props.input as any).url}>
-          WebFetch {(props.input as any).url}
-        </ToolTitle>
-        <Show when={props.output}>
-          <box>
-            <text>{props.output?.trim()}</text>
-          </box>
-        </Show>
-      </>
+      <ToolTitle icon="%" fallback="Fetching from the web..." when={(props.input as any).url}>
+        WebFetch {(props.input as any).url}
+      </ToolTitle>
     )
   },
 })
@@ -503,13 +496,15 @@ ToolRegistry.register<typeof TodoWriteTool>({
   container: "block",
   ready(props) {
     return (
-      <For each={props.input.todos ?? []}>
-        {(todo) => (
-          <text style={{ fg: todo.status === "in_progress" ? Theme.success : Theme.textMuted }}>
-            [{todo.status === "completed" ? "✓" : " "}] {todo.content}
-          </text>
-        )}
-      </For>
+      <box>
+        <For each={props.input.todos ?? []}>
+          {(todo) => (
+            <text style={{ fg: todo.status === "in_progress" ? Theme.success : Theme.textMuted }}>
+              [{todo.status === "completed" ? "✓" : " "}] {todo.content}
+            </text>
+          )}
+        </For>
+      </box>
     )
   },
 })
