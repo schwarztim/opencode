@@ -1,7 +1,7 @@
 import type { Message, Agent, Provider, Session, Part, Config, Todo } from "@opencode-ai/sdk"
 import { createStore, produce, reconcile } from "solid-js/store"
 import { useSDK } from "./sdk"
-import { createContext, onCleanup, Show, useContext, type ParentProps } from "solid-js"
+import { createContext, Show, useContext, type ParentProps } from "solid-js"
 import { Binary } from "../../../../util/binary"
 
 function init() {
