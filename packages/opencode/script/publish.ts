@@ -7,12 +7,12 @@ import pkg from "../package.json"
 
 const snapshot = process.env["OPENCODE_SNAPSHOT"] === "true"
 let version = process.env["OPENCODE_VERSION"]
+const tag = process.env["OPENCODE_TAG"] ?? (snapshot ? "snapshot" : "latest")
 if (!version && snapshot) {
-  version = `0.0.0-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
+  version = `0.0.0-${tag}-${new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "")}`
   process.env["OPENCODE_VERSION"] = version
 }
 if (!version) throw new Error("OPENCODE_VERSION is required")
-const tag = process.env["OPENCODE_TAG"] ?? (snapshot ? "snapshot" : "latest")
 
 console.log(`publishing ${version}`)
 
