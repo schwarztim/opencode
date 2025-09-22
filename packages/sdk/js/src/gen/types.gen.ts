@@ -1153,13 +1153,6 @@ export type EventServerConnected = {
   }
 }
 
-export type EventIdeInstalled = {
-  type: "ide.installed"
-  properties: {
-    ide: string
-  }
-}
-
 export type Event =
   | EventInstallationUpdated
   | EventLspClientDiagnostics
@@ -1178,7 +1171,6 @@ export type Event =
   | EventSessionError
   | EventFileWatcherUpdated
   | EventServerConnected
-  | EventIdeInstalled
 
 export type ProjectListData = {
   body?: never

@@ -103,7 +103,7 @@ function App() {
   const dialog = useDialog()
   const local = useLocal()
 
-  useKeyHandler(async (evt) => {
+  useKeyboard(async (evt) => {
     if (evt.name === "tab") {
       local.agent.move(evt.shift ? -1 : 1)
       return
