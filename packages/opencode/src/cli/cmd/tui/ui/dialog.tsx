@@ -72,7 +72,7 @@ function init() {
       setStore("size", "medium")
       setStore("stack", [])
     },
-    replace(input: JSX.Element) {
+    replace(input: any) {
       setStore("size", "medium")
       setStore("stack", [input])
     },
