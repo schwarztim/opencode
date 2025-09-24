@@ -207,7 +207,7 @@ export function Prompt(props: PromptProps) {
             </Match>
             <Match when={true}>
               <text live>
-                ctrl+k <span style={{ fg: Theme.textMuted }}>commands</span>
+                ctrl+p <span style={{ fg: Theme.textMuted }}>commands</span>
               </text>
             </Match>
           </Switch>
@@ -421,7 +421,7 @@ function Autocomplete(props: {
         return store.visible
       },
       onInput(value: string) {
-        if (value.length <= store.index) hide()
+        if (store.visible && value.length <= store.index) hide()
       },
       onKeyDown(e: ParsedKey) {
         if (store.visible) {

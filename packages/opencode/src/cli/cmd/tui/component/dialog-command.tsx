@@ -56,7 +56,7 @@ export function CommandProvider(props: ParentProps) {
   const dialog = useDialog()
 
   useKeyboard((evt) => {
-    if (evt.name === "k" && evt.ctrl) {
+    if (evt.name === "p" && evt.ctrl) {
       dialog.replace(() => <DialogCommand options={value.options} />)
       return
     }

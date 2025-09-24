@@ -138,13 +138,17 @@ export function Session() {
           flexGrow={1}
         >
           <For each={messages()}>
-            {(message) => (
+            {(message, index) => (
               <Switch>
                 <Match when={message.role === "user"}>
                   <UserMessage message={message as UserMessage} parts={sync.data.part[message.id] ?? []} />
                 </Match>
                 <Match when={message.role === "assistant"}>
-                  <AssistantMessage message={message as AssistantMessage} parts={sync.data.part[message.id] ?? []} />
+                  <AssistantMessage
+                    last={index() === messages().length - 1}
+                    message={message as AssistantMessage}
+                    parts={sync.data.part[message.id] ?? []}
+                  />
                 </Match>
               </Switch>
             )}
@@ -193,7 +197,7 @@ function UserMessage(props: { message: UserMessage; parts: Part[] }) {
   )
 }
 
-function AssistantMessage(props: { message: AssistantMessage; parts: Part[] }) {
+function AssistantMessage(props: { message: AssistantMessage; parts: Part[]; last: boolean }) {
   const local = useLocal()
   return (
     <>
@@ -221,7 +225,7 @@ function AssistantMessage(props: { message: AssistantMessage; parts: Part[] }) {
           <text fg={Theme.textMuted}>{props.message.error?.data.message}</text>
         </box>
       </Show>
-      <Show when={!props.message.time.completed}>
+      <Show when={!props.message.time.completed || (props.last && props.message.finish === "tool-calls")}>
         <box
           paddingLeft={2}
           marginTop={1}
@@ -262,7 +266,7 @@ function resize(el: BoxRenderable) {
   const index = children.indexOf(el)
   const previous = children[index - 1]
   if (!previous) return
-  if (previous.height > 1) {
+  if (previous.height > 1 || previous.marginTop === 1) {
     el.marginTop = 1
     return
   }

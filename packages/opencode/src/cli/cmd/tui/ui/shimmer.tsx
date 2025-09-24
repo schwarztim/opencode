@@ -7,11 +7,11 @@ export type ShimmerProps = {
   color: string
 }
 
-const DURATION = 200
+const DURATION = 2_500
 
 export function Shimmer(props: ShimmerProps) {
   const timeline = createComponentTimeline({
-    duration: (props.text.length + 1) * DURATION,
+    duration: DURATION,
     loop: true,
   })
   const characters = props.text.split("")
@@ -23,12 +23,12 @@ export function Shimmer(props: ShimmerProps) {
       { shimmer: 0.4 },
       { shimmer: 1 },
       {
-        duration: DURATION,
+        duration: DURATION / (props.text.length + 1),
         ease: "linear",
         alternate: true,
         loop: 2,
       },
-      (i * DURATION) / 2,
+      (i * (DURATION / (props.text.length + 1))) / 2,
     ),
   )
 

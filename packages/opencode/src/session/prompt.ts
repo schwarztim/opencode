@@ -1008,12 +1008,6 @@ export namespace SessionPrompt {
                 throw value.error
 
               case "start-step":
-                await Session.updatePart({
-                  id: Identifier.ascending("part"),
-                  messageID: assistantMsg.id,
-                  sessionID: assistantMsg.sessionID,
-                  type: "step-start",
-                })
                 snapshot = await Snapshot.track()
                 break
 
@@ -1021,14 +1015,6 @@ export namespace SessionPrompt {
                 const usage = Session.getUsage(input.model, value.usage, value.providerMetadata)
                 assistantMsg.cost += usage.cost
                 assistantMsg.tokens = usage.tokens
-                await Session.updatePart({
-                  id: Identifier.ascending("part"),
-                  messageID: assistantMsg.id,
-                  sessionID: assistantMsg.sessionID,
-                  type: "step-finish",
-                  tokens: usage.tokens,
-                  cost: usage.cost,
-                })
                 await Session.updateMessage(assistantMsg)
                 if (snapshot) {
                   const patch = await Snapshot.patch(snapshot)
@@ -1095,6 +1081,7 @@ export namespace SessionPrompt {
           log.error("process", {
             error: e,
           })
+          assistantMsg.finish = "error"
           switch (true) {
             case e instanceof DOMException && e.name === "AbortError":
               assistantMsg.error = new MessageV2.AbortedError(
