@@ -246,9 +246,10 @@ export default function Home() {
             <div data-slot="testimonial">
               <div data-slot="name">
                 <img src={avatarDax} alt=""/>
-                <span><strong>Dax Raad</strong> <span>ex-CEO, Terminal Products</span></span>
-              </div>
-              <div data-slot="quote">
+                <strong>Dax Raad</strong>
+                <span>ex-CEO, Terminal Products</span>
+            </div>
+            <div data-slot="quote">
               I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
                 it’s really good.
               </div>
@@ -287,7 +288,7 @@ export default function Home() {
               <div data-slot="name">
                 <img src={avatarAdam} alt=""/>
                 <span><strong>Adam Elmore</strong>
-                <span> ex-Hero, AWS</span></span>
+                  <span> ex-Hero, AWS</span></span>
               </div>
               <div data-slot="quote">
               I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
