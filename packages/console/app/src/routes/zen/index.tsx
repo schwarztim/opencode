@@ -60,7 +60,7 @@ export default function Home() {
 
   return (
     <main data-page="zen">
-      <Title>OpenCode Zen | AI coding agent built for the terminal</Title>
+      <Title>OpenCode Zen | A curated set of reliable coding optimized models</Title>
 
       <div data-component="content">
         <section data-component="top">
@@ -83,11 +83,11 @@ export default function Home() {
             <div data-slot="hero-copy">
               <img data-slot="zen logo dark" src={zenLogoDark}
                    alt="Zen logo dark"/>
-              <strong>Reliable coding optimized models from OpenCode</strong>
-              <p>Zen gives you access to a handpicked set of AI models that
+              <strong>Reliable coding optimized models</strong>
+              <p>Zen gives you access to a curated set of AI models that
                 OpenCode has tested and benchmarked specifically for coding
                 agents. No need to worry about inconsistent performance and
-                quality across providers, use validated models that work.</p>
+                quality, use validated models that work.</p>
               <div data-slot="model-logos">
                 <div>
                   <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
@@ -144,7 +144,14 @@ export default function Home() {
                 </div>
               </div>
               <button>
-                Get started with Zen
+                <span>Get started with Zen </span><svg width="24" height="24"
+                                                       viewBox="0 0 24 24"
+                                                       fill="none"
+                                                       xmlns="http://www.w3.org/2000/svg">
+                <path d="M6.5 12L17 12M13 16.5L17.5 12L13 7.5" stroke="white"
+                      stroke-width="1.5" stroke-linecap="square"/>
+              </svg>
+
               </button>
 
             </div>
@@ -200,14 +207,16 @@ export default function Home() {
               any agent.</p>
           </div>
           <ul>
-            <li><span>[1]</span> <strong>Sign up and add $20 balance</strong> -
+            <li><span>[1]</span>
+              <span><strong>Sign up and add $20 balance</strong> -
               follow the <a
-                href="" title="setup instructions">setup instructions</a></li>
-            <li><span>[2]</span> <strong>Use Zen at cost price</strong> - pay
-              per request with zero markups
+                  href=""
+                  title="setup instructions">setup instructions</a></span></li>
+            <li><span>[2]</span> <span><strong>Use Zen at cost price</strong> - pay
+              per request with zero markups</span>
             </li>
-            <li><span>[3]</span> <strong>Auto-top up</strong> - when your
-              balance reaches $5 we’ll automatically add $20
+            <li><span>[3]</span> <span><strong>Auto-top up</strong> - when your
+              balance reaches $5 we’ll automatically add $20</span>
             </li>
           </ul>
         </section>
@@ -236,10 +245,11 @@ export default function Home() {
           <a href="https://x.com/iamdavidhill/status/1971693263498141817">
             <div data-slot="testimonial">
               <div data-slot="name">
-                <img src={avatarDax} alt=""/> <strong>Dax Raad</strong> <span>ex-CEO, Terminal Products</span>
+                <img src={avatarDax} alt=""/>
+                <span><strong>Dax Raad</strong> <span>ex-CEO, Terminal Products</span></span>
               </div>
               <div data-slot="quote">
-                I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
+              I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
                 it’s really good.
               </div>
             </div>
@@ -248,7 +258,8 @@ export default function Home() {
           <a href="https://x.com/iamdavidhill/status/1971693263498141817">
             <div data-slot="testimonial">
               <div data-slot="name">
-                <img src={avatarJay} alt=""/> <strong>Jay V</strong> <span>ex-Founder, SEED, PM, Melt, Pop, Dapt, Cadmus, and ViewPoint</span>
+                <img src={avatarJay} alt=""/>
+                <span><strong>Jay V</strong> <span>ex-Founder, SEED, PM, Melt, Pop, Dapt, Cadmus, and ViewPoint</span></span>
               </div>
               <div data-slot="quote">
                 I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
@@ -260,8 +271,9 @@ export default function Home() {
           <a href="https://x.com/iamdavidhill/status/1971693263498141817">
             <div data-slot="testimonial">
               <div data-slot="name">
-                <img src={avatarFrank} alt=""/> <strong>Frank Wang</strong>
-                <span>ex-Intern, Nvidia (4 times)</span>
+                <img src={avatarFrank} alt=""/>
+                <span><strong>Frank Wang</strong>
+                <span> ex-Intern, Nvidia (4 times)</span></span>
               </div>
               <div data-slot="quote">
                 I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
@@ -273,11 +285,12 @@ export default function Home() {
           <a href="https://x.com/iamdavidhill/status/1971693263498141817">
             <div data-slot="testimonial">
               <div data-slot="name">
-                <img src={avatarAdam} alt=""/> <strong>Adam Elmore</strong>
-                <span>ex-Hero, AWS</span>
+                <img src={avatarAdam} alt=""/>
+                <span><strong>Adam Elmore</strong>
+                <span> ex-Hero, AWS</span></span>
               </div>
               <div data-slot="quote">
-                I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
+              I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
                 it’s really good.
               </div>
             </div>
@@ -286,8 +299,8 @@ export default function Home() {
           <a href="https://x.com/iamdavidhill/status/1971693263498141817">
             <div data-slot="testimonial">
               <div data-slot="name">
-                <img src={avatarDavid} alt=""/> <strong>David Hill</strong>
-                <span>ex-Head of Design, Laravel</span>
+                <img src={avatarDavid} alt=""/>
+                <span><strong>David Hill</strong><span> ex-Head of Design, Laravel</span></span>
               </div>
               <div data-slot="quote">
                 I can't recommend <span>@OpenCode</span> Zen enough. Seriously,
@@ -485,7 +498,7 @@ export default function Home() {
             <a href="https://opencode.ai/discord">Discord</a>
           </div>
           <div data-slot="cell">
-            <a href="https://x.com/opencode">X.com</a>
+            <a href="https://x.com/opencode">@OpenCode</a>
           </div>
         </footer>
       </div>
