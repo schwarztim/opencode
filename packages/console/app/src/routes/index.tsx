@@ -271,10 +271,42 @@ export default function Home() {
                         <CopyStatus/>
                       </button>
                     </pre>
-                    <pre data-slot="panel" data-tab="npm" hidden><code>npm i -g opencode</code></pre>
-                    <pre data-slot="panel" data-tab="bun" hidden><code>bun add -g opencode</code></pre>
-                    <pre data-slot="panel" data-tab="brew" hidden><code>brew install opencode</code></pre>
-                    <pre data-slot="panel" data-tab="paru" hidden><code>paru -S opencode</code></pre>
+                    <pre data-slot="panel" data-tab="npm" hidden>
+                      <button data-copy data-slot="command">
+                        <span>
+                          <span data-slot="protocol">npm i -g </span>
+                          <span data-slot="highlight">opencode</span>
+                        </span>
+                        <CopyStatus/>
+                      </button>
+                    </pre>
+                    <pre data-slot="panel" data-tab="bun" hidden>
+                      <button data-copy data-slot="command">
+                        <span>
+                          <span data-slot="protocol">bun add -g </span>
+                          <span data-slot="highlight">opencode</span>
+                        </span>
+                        <CopyStatus/>
+                      </button>
+                    </pre>
+                    <pre data-slot="panel" data-tab="brew" hidden>
+                      <button data-copy data-slot="command">
+                        <span>
+                          <span data-slot="protocol">brew install </span>
+                          <span data-slot="highlight">opencode</span>
+                        </span>
+                        <CopyStatus/>
+                      </button>
+                    </pre>
+                    <pre data-slot="panel" data-tab="paru" hidden>
+                      <button data-copy data-slot="command">
+                        <span>
+                          <span data-slot="protocol">paru -S </span>
+                          <span data-slot="highlight">opencode</span>
+                        </span>
+                        <CopyStatus/>
+                      </button>
+                    </pre>
                   </div>
                 </section>
               </div>

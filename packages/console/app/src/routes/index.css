@@ -11,6 +11,7 @@
 [data-page="opencode"] {
   --color-background: hsl(0, 20%, 99%);
   --color-background-weak: hsl(0, 8%, 97%);
+  --color-background-weak-hover: hsl(0, 8%, 94%);
   --color-background-strong: hsl(0, 5%, 12%);
   --color-background-strong-hover: hsl(0, 5%, 18%);
   --color-background-interactive: hsl(62, 84%, 88%);
@@ -253,7 +254,7 @@
     border: 1px solid var(--color-border-weak);
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
-    padding: 24px;
+    padding: 16px;
   }
 
   /* Panel content */
@@ -266,9 +267,25 @@
     font-size: 16px;
     font-family: var(--font-mono);
 
-    [data-slot="highlight"] {
-      font-weight: 500;
-      color: var(--color-text-strong);
+    [data-slot="command"] {
+      all: unset;
+      display: flex;
+      cursor: pointer;
+      align-items: center;
+      color: var(--color-text-secondary);
+      gap: var(--space-2);
+      color: var(--color-text);
+      padding: 8px 8px;
+      border-radius: 4px;
+
+      [data-slot="highlight"] {
+        font-weight: 500;
+        color: var(--color-text-strong);
+      }
+    }
+
+    [data-slot="command"]:hover {
+      background: var(--color-background-weak-hover);
     }
   }
 
