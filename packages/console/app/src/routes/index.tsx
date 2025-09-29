@@ -176,39 +176,39 @@ export default function Home() {
             <ul>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Native TUI</strong> A responsive, native, themeable terminal UI
+                  <span>[*]</span> <strong>Native TUI</strong> A responsive, native, themeable terminal UI
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>LSP enabled</strong> Automatically loads the right LSPs for the LLM
+                  <span>[*]</span> <strong>LSP enabled</strong> Automatically loads the right LSPs for the LLM
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Multi-session</strong> Start multiple agents in parallel on the same project
+                  <span>[*]</span> <strong>Multi-session</strong> Start multiple agents in parallel on the same project
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Share links</strong> Share a link to any session for reference or to debug
+                  <span>[*]</span> <strong>Share links</strong> Share a link to any session for reference or to debug
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Claude Pro</strong> Log in with Anthropic to use your Claude Pro or Max
+                  <span>[*]</span> <strong>Claude Pro</strong> Log in with Anthropic to use your Claude Pro or Max
                   account
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Any model</strong> 75+ LLM providers through Models.dev, including local
+                  <span>[*]</span> <strong>Any model</strong> 75+ LLM providers through Models.dev, including local
                   models
                 </div>
               </li>
               <li>
                 <div>
-                  <span>[+]</span> <strong>Any editor</strong> OpenCode runs in your terminal, pair it with any IDE
+                  <span>[*]</span> <strong>Any editor</strong> OpenCode runs in your terminal, pair it with any IDE
                 </div>
               </li>
             </ul>
@@ -218,9 +218,9 @@ export default function Home() {
             <div data-slot="section-title">
               <h3>The open source AI coding agent</h3>
               <div>
-                <span>[✦]</span>
+                <span>[*]</span>
                 <p>
-                  With over 25,000 GitHub stars and almost 3,000 commits, OpenCode is used and trusted by over 20,000
+                  With over 26,000 GitHub stars and almost 3,000 commits, OpenCode is used and trusted by over 20,000
                   developers every day.
                 </p>
               </div>
@@ -328,6 +328,13 @@ export default function Home() {
                   </clipPath>
                 </defs>
               </svg>
+
+              <div data-component="growth-stats">
+                <span><strong>200K</strong> Monthly Active Users</span>
+                <span><strong>26K</strong> GitHub Stars</span>
+                <span><strong>200</strong> Contributors</span>
+              </div>
+
             </div>
           </section>
 
@@ -335,7 +342,7 @@ export default function Home() {
             <div data-slot="privacy-title">
               <h3>Built for privacy first</h3>
               <div>
-                <span>[◇]</span>
+                <span>[*]</span>
 
                 <p>
                   OpenCode does not store any of your code or context data, so that it can operate in privacy sensitive environments. Learn more about <A href="/docs/enterprise/ ">privacy and enterprise</A>.

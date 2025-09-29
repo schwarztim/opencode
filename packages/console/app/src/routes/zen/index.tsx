@@ -151,13 +151,13 @@ export default function Home() {
             <p>We're fixing this for everyone, not just OpenCode users.</p>
             <ul>
               <li>
-                <span>[+]</span> Testing select models and consulting their teams
+                <span>[*]</span> Testing select models and consulting their teams
               </li>
               <li>
-                <span>[+]</span> Working with providers to ensure they’re delivered properly
+                <span>[*]</span> Working with providers to ensure they’re delivered properly
               </li>
               <li>
-                <span>[+]</span> Benchmarking all model-provider combinations we recommend
+                <span>[*]</span> Benchmarking all model-provider combinations we recommend
               </li>
             </ul>
           </section>
@@ -196,9 +196,12 @@ export default function Home() {
             <div data-slot="privacy-title">
               <h3>Your privacy is important to us</h3>
               <div>
+                <span>[*]</span>
                 <p>
-                  <span>[◇]</span> All Zen models are hosted in the US. Providers follow a zero-retention policy and do
-                  not use your data for model training, with the <A href="../docs/zen/#privacy">following exceptions</A>.
+                  All Zen models are hosted in the US. Providers follow a
+                  zero-retention policy and do
+                  not use your data for model training, with the <A
+                  href="../docs/zen/#privacy">following exceptions</A>.
                 </p>
               </div>
             </div>

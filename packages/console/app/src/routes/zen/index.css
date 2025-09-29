@@ -387,13 +387,18 @@
         margin-bottom: 12px;
       }
 
-      p {
+      div {
         display: flex;
         gap: 12px;
       }
 
+      p {
+
+      }
+
       span {
         color: var(--color-icon);
+        line-height: 200%;
       }
 
       div {

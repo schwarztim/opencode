@@ -22,7 +22,7 @@ export function Header(props: { zen?: boolean }) {
           notation: "compact",
           compactDisplay: "short",
         }).format(stars()!)
-      : "[25K]",
+      : "25K",
   )
 
   const [store, setStore] = createStore({

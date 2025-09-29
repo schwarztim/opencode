@@ -19,7 +19,7 @@ export function Footer() {
           notation: "compact",
           compactDisplay: "short",
         }).format(stars()!)
-      : "[25K]",
+      : "25K",
   )
 
   return (
