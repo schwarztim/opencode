@@ -347,6 +347,7 @@ const MIME_BADGE: Record<string, string> = {
   "image/gif": "img",
   "image/webp": "img",
   "application/pdf": "pdf",
+  "application/x-directory": "dir",
 }
 
 function UserMessage(props: { message: UserMessage; parts: Part[]; onMouseUp: () => void }) {
