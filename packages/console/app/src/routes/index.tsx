@@ -279,7 +279,7 @@ export default function Home() {
                     </svg>
 
                   </div>
-                  <span><figure>Fig. 1.</figure> <strong>26K</strong> GitHub Stars</span>
+                  <span><figure>Fig 1.</figure> <strong>26K</strong> GitHub Stars</span>
                 </div>
 
                 <div data-component="growth-stat">
@@ -865,7 +865,7 @@ export default function Home() {
 
 
                   </div>
-                  <span><figure>Fig. 2.</figure> <strong>188</strong> Contributors</span>
+                  <span><figure>Fig 2.</figure> <strong>188</strong> Contributors</span>
                 </div>
 
                 <div data-component="growth-stat">
@@ -936,7 +936,7 @@ export default function Home() {
 
 
                   </div>
-                  <span><figure>Fig. 3.</figure> <strong>200K</strong> Monthly Devs</span>
+                  <span><figure>Fig 3.</figure> <strong>200K</strong> Monthly Devs</span>
                 </div>
               </div>
 
