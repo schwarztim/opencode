@@ -117,6 +117,7 @@ function init() {
 
   const sanitizer = createMemo(() => new RegExp(`${store.path.directory}/`, "g"))
   const sanitize = (text: string) => text.replace(sanitizer(), "")
+  const absolute = (path: string) => (store.path.directory + "/" + path).replace("//", "/")
 
   const result = {
     data: store,
@@ -148,6 +149,7 @@ function init() {
       },
     },
     load,
+    absolute,
     sanitize,
   }
   return result
