@@ -1,5 +1,5 @@
 {
-  "name": "@opencode/console-app",
+  "name": "@opencode-ai/console-app",
   "type": "module",
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -11,11 +11,11 @@
   },
   "dependencies": {
     "@ibm/plex": "6.4.1",
-    "@opencode/console-core": "workspace:*",
+    "@opencode-ai/console-core": "workspace:*",
+    "@opencode-ai/console-mail": "workspace:*",
     "@openauthjs/openauth": "catalog:",
     "@kobalte/core": "catalog:",
     "@jsx-email/render": "1.1.1",
-    "@opencode/console-mail": "workspace:*",
     "@solidjs/meta": "^0.29.4",
     "@solidjs/router": "^0.15.0",
     "@solidjs/start": "^1.1.0",
