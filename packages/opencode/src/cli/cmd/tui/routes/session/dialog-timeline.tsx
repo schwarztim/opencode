@@ -33,5 +33,5 @@ export function DialogTimeline(props: { sessionID: string; onMove: (messageID: s
     return result
   })
 
-  return <DialogSelect onMove={(option) => props.onMove(option.value)} title="Message Actions" options={options()} />
+  return <DialogSelect onMove={(option) => props.onMove(option.value)} title="Timeline" options={options()} />
 }
