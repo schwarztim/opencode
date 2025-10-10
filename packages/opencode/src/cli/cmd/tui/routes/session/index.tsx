@@ -666,7 +666,7 @@ type ToolProps<T extends Tool.Info> = {
 }
 function GenericTool(props: ToolProps<any>) {
   return (
-    <ToolTitle icon="#" fallback="Writing command..." when={true}>
+    <ToolTitle icon="⚙" fallback="Writing command..." when={true}>
       {props.tool} {input(props.input)}
     </ToolTitle>
   )
