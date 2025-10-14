@@ -190,6 +190,11 @@ export function Autocomplete(props: {
         description: "list agents",
         onSelect: () => command.trigger("agent.list"),
       },
+      {
+        display: "/status",
+        description: "show status",
+        onSelect: () => command.trigger("opencode.status"),
+      },
     )
     const max = firstBy(results, [(x) => x.display.length, "desc"])?.display.length
     if (!max) return results
