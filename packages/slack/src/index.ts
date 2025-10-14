@@ -19,7 +19,46 @@ const opencode = await createOpencode({
 })
 console.log("✅ Opencode server ready")
 
-const sessions = new Map<string, { client: any; server: any; sessionId: string; channel: string; thread: string }>()
+const sessions = new Map<
+  string,
+  { client: any; server: any; sessionId: string; channel: string; thread: string; eventStream: any }
+>()
+const toolStatusMessages = new Map<string, string>() // Track tool status messages by session
+
+async function handleToolUpdate(toolPart: any, channel: string, thread: string) {
+  const toolName = toolPart.tool || "unknown"
+  const state = toolPart.state || "unknown"
+  const icon = state === "completed" ? "✅" : state === "error" ? "❌" : state === "running" ? "🔄" : "⏳"
+
+  const toolMessage = `${icon} *${toolName}* (${state})`
+  const sessionKey = `${channel}-${thread}`
+
+  // Get existing tools for this session
+  const existingMessage = toolStatusMessages.get(sessionKey) || ""
+  const tools = existingMessage ? existingMessage.split("\n").slice(1) : [] // Skip header
+
+  // Update or add the tool status
+  const toolIndex = tools.findIndex((t) => t.includes(toolName))
+  if (toolIndex >= 0) {
+    tools[toolIndex] = toolMessage
+  } else {
+    tools.push(toolMessage)
+  }
+
+  const updatedMessage = `🔧 Tools used:\n${tools.join("\n")}`
+  toolStatusMessages.set(sessionKey, updatedMessage)
+
+  // Update the tool status message
+  try {
+    await app.client.chat.postMessage({
+      channel,
+      thread_ts: thread,
+      text: updatedMessage,
+    })
+  } catch (error) {
+    console.error("Failed to send tool update:", error)
+  }
+}
 
 app.use(async ({ next, context }) => {
   console.log("📡 Raw Slack event:", JSON.stringify(context, null, 2))
@@ -57,7 +96,21 @@ app.message(async ({ message, say }) => {
     }
 
     console.log("✅ Created opencode session:", createResult.data.id)
-    session = { client, server, sessionId: createResult.data.id, channel, thread }
+
+    // Start listening to events for this session
+    const eventStream = client.event.subscribe()
+
+    eventStream.addEventListener("message", (event: any) => {
+      const data = JSON.parse(event.data)
+      if (data.type === "message.part.updated" && data.properties.part.sessionID === createResult.data.id) {
+        const part = data.properties.part
+        if (part.type === "tool") {
+          handleToolUpdate(part, channel, thread)
+        }
+      }
+    })
+
+    session = { client, server, sessionId: createResult.data.id, channel, thread, eventStream }
     sessions.set(sessionKey, session)
 
     const shareResult = await client.session.share({ path: { id: createResult.data.id } })
@@ -84,34 +137,19 @@ app.message(async ({ message, say }) => {
 
   const response = result.data
 
-  // Extract tool calls from response parts
-  const toolParts = response.parts?.filter((p: any) => p.type === "tool") || []
-  const textParts = response.parts?.filter((p: any) => p.type === "text") || []
-
   // Build response text
   const responseText =
     response.info?.content ||
-    textParts.map((p: any) => p.text).join("\n") ||
+    response.parts
+      ?.filter((p: any) => p.type === "text")
+      .map((p: any) => p.text)
+      .join("\n") ||
     "I received your message but didn't have a response."
 
   console.log("💬 Sending response:", responseText)
 
-  // Send main response
+  // Send main response (tool updates will come via live events)
   await say({ text: responseText, thread_ts: thread })
-
-  // Send tool call information if any tools were used and completed
-  const completedTools = toolParts.filter((tool: any) => tool.state === "completed")
-  if (completedTools.length > 0) {
-    const toolMessages = completedTools.map((tool: any) => {
-      const toolName = tool.tool || "unknown"
-      return `✅ *${toolName}*`
-    })
-
-    await say({
-      text: `🔧 Tools used:\n${toolMessages.join("\n")}`,
-      thread_ts: thread,
-    })
-  }
 })
 
 app.command("/test", async ({ command, ack, say }) => {
