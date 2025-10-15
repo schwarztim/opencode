@@ -6,6 +6,11 @@ export const { use: useSDK, provider: SDKProvider } = createSimpleContext({
   init: (props: { url: string }) => {
     const client = createOpencodeClient({
       baseUrl: props.url,
+      fetch: (req) => {
+        // @ts-ignore
+        req.timeout = false
+        return fetch(req)
+      },
     })
     return client
   },
