@@ -369,7 +369,7 @@ export function Prompt(props: PromptProps) {
           <box backgroundColor={Theme.backgroundElement} width={1} justifyContent="center" alignItems="center"></box>
         </box>
         <box flexDirection="row" justifyContent="space-between">
-          <text flexShrink={0} wrap={false}>
+          <text flexShrink={0} wrapMode="none">
             <span style={{ fg: Theme.textMuted }}>{local.model.parsed().provider}</span>{" "}
             <span style={{ bold: true }}>{local.model.parsed().model}</span>
           </text>
