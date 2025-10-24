@@ -1,4 +1,4 @@
-import type { BoxRenderable, TextareaRenderable, KeyEvent } from "@opentui/core"
+import type { ParsedKey, BoxRenderable, InputRenderable } from "@opentui/core"
 import fuzzysort from "fuzzysort"
 import { firstBy } from "remeda"
 import { createMemo, createResource, createEffect, onMount, For, Show } from "solid-js"
@@ -12,7 +12,7 @@ import type { PromptInfo } from "./history"
 
 export type AutocompleteRef = {
   onInput: (value: string) => void
-  onKeyDown: (e: KeyEvent) => void
+  onKeyDown: (e: ParsedKey) => void
   visible: false | "@" | "/"
 }
 
@@ -28,7 +28,7 @@ export function Autocomplete(props: {
   sessionID?: string
   setPrompt: (input: (prompt: PromptInfo) => void) => void
   anchor: () => BoxRenderable
-  input: () => TextareaRenderable
+  input: () => InputRenderable
   ref: (ref: AutocompleteRef) => void
 }) {
   const sdk = useSDK()
@@ -138,9 +138,8 @@ export function Autocomplete(props: {
         display: "/" + command.name,
         description: command.description,
         onSelect: () => {
-          console.log("commands.onSelect", command.name, Bun.stringWidth(props.input().value))
           props.input().value = "/" + command.name + " "
-          props.input().cursorOffset = Bun.stringWidth(props.input().value)
+          props.input().cursorPosition = props.input().value.length
         },
       })
     }
@@ -239,10 +238,9 @@ export function Autocomplete(props: {
   }
 
   function show(mode: "@" | "/") {
-    console.log("show", mode, props.input().visualCursor.offset)
     setStore({
       visible: mode,
-      index: props.input().visualCursor.offset,
+      index: props.input().cursorPosition,
       position: {
         x: props.anchor().x,
         y: props.anchor().y,
@@ -264,7 +262,7 @@ export function Autocomplete(props: {
       onInput(value: string) {
         if (store.visible && value.length <= store.index) hide()
       },
-      onKeyDown(e: KeyEvent) {
+      onKeyDown(e: ParsedKey) {
         if (store.visible) {
           if (e.name === "up") move(-1)
           if (e.name === "down") move(1)
@@ -280,7 +278,7 @@ export function Autocomplete(props: {
           }
 
           if (e.name === "/") {
-            if (props.input().visualCursor.offset === 0) show("/")
+            if (props.input().cursorPosition === 0) show("/")
           }
         }
       },
