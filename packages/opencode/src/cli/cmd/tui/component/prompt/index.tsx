@@ -64,6 +64,7 @@ export function Prompt(props: PromptProps) {
 
     return [
       { name: "return", action: "submit" },
+      { name: "return", meta: true, action: "newline" },
       ...newlineBindings.map((binding) => ({
         name: binding.name,
         ctrl: binding.ctrl || undefined,
@@ -427,7 +428,7 @@ export function Prompt(props: PromptProps) {
             <textarea
               placeholder={
                 props.showPlaceholder
-                  ? t`${dim(fg(Theme.primary)("  → meta+↑↓"))} ${dim(fg("#64748b")("history"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)(keybind.print("input_newline")))} ${dim(fg("#64748b")("newline"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)(keybind.print("input_submit")))} ${dim(fg("#64748b")("submit"))}`
+                  ? t`${dim(fg(Theme.primary)("  → up/down"))} ${dim(fg("#64748b")("history"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)(keybind.print("input_newline")))} ${dim(fg("#64748b")("newline"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)(keybind.print("input_submit")))} ${dim(fg("#64748b")("submit"))}`
                   : undefined
               }
               textColor={Theme.text}
@@ -474,16 +475,19 @@ export function Prompt(props: PromptProps) {
                 }
                 if (store.mode === "normal") autocomplete.onKeyDown(e)
                 if (!autocomplete.visible) {
-                  if (e.option && (e.name === "up" || e.name === "down")) {
-                    const direction = e.name === "up" ? -1 : 1
-                    const item = history.move(direction, input.plainText)
-                    if (item) {
-                      input.setText(item.input, { history: false })
-                      setStore("prompt", item)
-                      restoreExtmarksFromParts(item.parts)
-                      e.preventDefault()
+                  if (e.name === "up" || e.name === "down") {
+                    if (input.cursorOffset === 0 || e.option) {
+                      const direction = e.name === "up" ? -1 : 1
+                      const item = history.move(direction, input.plainText)
+
+                      if (item) {
+                        input.setText(item.input, { history: false })
+                        setStore("prompt", item)
+                        restoreExtmarksFromParts(item.parts)
+                        e.preventDefault()
+                      }
+                      return
                     }
-                    return
                   }
                 }
                 if (!autocomplete.visible) {
