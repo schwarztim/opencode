@@ -6,6 +6,9 @@ import {
   KeyEvent,
   SyntaxStyle,
   PasteEvent,
+  t,
+  dim,
+  fg,
 } from "@opentui/core"
 import { createEffect, createMemo, Match, Switch, type JSX, onMount } from "solid-js"
 import { useLocal } from "@tui/context/local"
@@ -379,6 +382,9 @@ export function Prompt(props: PromptProps) {
           </box>
           <box paddingTop={1} paddingBottom={1} backgroundColor={Theme.backgroundElement} flexGrow={1}>
             <textarea
+              placeholder={t`${dim(fg(Theme.primary)("  → meta+↑↓"))} ${dim(fg("#64748b")("history"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)("meta+return"))} ${dim(fg("#64748b")("newline"))} ${dim(fg("#a78bfa")("•"))} ${dim(fg(Theme.primary)("return"))} ${dim(fg("#64748b")("submit"))}`}
+              textColor={Theme.text}
+              focusedTextColor={Theme.text}
               minHeight={1}
               maxHeight={6}
               onContentChange={() => {
