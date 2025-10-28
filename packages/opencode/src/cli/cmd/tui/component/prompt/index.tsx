@@ -292,7 +292,27 @@ export function Prompt(props: PromptProps) {
           return sessionID
         })()
     const messageID = Identifier.ascending("message")
-    const inputText = store.prompt.input
+    let inputText = store.prompt.input
+
+    // Expand pasted text inline before submitting
+    const allExtmarks = input.extmarks.getAllForTypeId(promptPartTypeId)
+    const sortedExtmarks = allExtmarks.sort((a, b) => b.start - a.start)
+
+    for (const extmark of sortedExtmarks) {
+      const partIndex = store.extmarkToPartIndex.get(extmark.id)
+      if (partIndex !== undefined) {
+        const part = store.prompt.parts[partIndex]
+        if (part?.type === "text" && part.text) {
+          const before = inputText.slice(0, extmark.start)
+          const after = inputText.slice(extmark.end)
+          inputText = before + part.text + after
+        }
+      }
+    }
+
+    // Filter out text parts (pasted content) since they're now expanded inline
+    const nonTextParts = store.prompt.parts.filter((part) => part.type !== "text")
+
     if (store.mode === "shell") {
       sdk.client.session.shell({
         path: {
@@ -334,7 +354,7 @@ export function Prompt(props: PromptProps) {
               type: "text",
               text: inputText,
             },
-            ...store.prompt.parts.map((x) => ({
+            ...nonTextParts.map((x) => ({
               id: Identifier.ascending("part"),
               ...x,
             })),
