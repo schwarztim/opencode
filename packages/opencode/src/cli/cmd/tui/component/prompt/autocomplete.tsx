@@ -103,15 +103,14 @@ export function Autocomplete(props: {
   }
 
   const [files] = createResource(
-    () => [filter()],
-    async () => {
-      if (!store.visible) return []
-      if (store.visible === "/") return []
+    () => filter(),
+    async (query) => {
+      if (!store.visible || store.visible === "/") return []
 
       // Get files from SDK
       const result = await sdk.client.find.files({
         query: {
-          query: filter() ?? "",
+          query: query ?? "",
         },
       })
 
@@ -257,10 +256,13 @@ export function Autocomplete(props: {
 
   const options = createMemo(() => {
     const mixed: AutocompleteOption[] = (
-      store.visible === "@" ? [...agents(), ...files()] : [...commands()]
+      store.visible === "@"
+        ? [...agents(), ...(files.loading ? files.latest || [] : files())]
+        : [...commands()]
     ).filter((x) => x.disabled !== true)
-    if (!filter()) return mixed.slice(0, 10)
-    const result = fuzzysort.go(filter()!, mixed, {
+    const currentFilter = filter()
+    if (!currentFilter) return mixed.slice(0, 10)
+    const result = fuzzysort.go(currentFilter, mixed, {
       keys: ["display", "description"],
       limit: 10,
     })
