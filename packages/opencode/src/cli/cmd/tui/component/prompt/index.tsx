@@ -316,7 +316,9 @@ export function Prompt(props: PromptProps) {
 
     // Expand pasted text inline before submitting
     const allExtmarks = input.extmarks.getAllForTypeId(promptPartTypeId)
-    const sortedExtmarks = allExtmarks.sort((a: { start: number }, b: { start: number }) => b.start - a.start)
+    const sortedExtmarks = allExtmarks.sort(
+      (a: { start: number }, b: { start: number }) => b.start - a.start,
+    )
 
     for (const extmark of sortedExtmarks) {
       const partIndex = store.extmarkToPartIndex.get(extmark.id)
@@ -472,15 +474,28 @@ export function Prompt(props: PromptProps) {
         <box
           flexDirection="row"
           {...SplitBorder}
-          borderColor={keybind.leader ? Theme.accent : store.mode === "shell" ? Theme.secondary : undefined}
+          borderColor={
+            keybind.leader ? Theme.accent : store.mode === "shell" ? Theme.secondary : undefined
+          }
           justifyContent="space-evenly"
         >
-          <box backgroundColor={Theme.backgroundElement} width={3} height="100%" alignItems="center" paddingTop={1}>
+          <box
+            backgroundColor={Theme.backgroundElement}
+            width={3}
+            height="100%"
+            alignItems="center"
+            paddingTop={1}
+          >
             <text attributes={TextAttributes.BOLD} fg={Theme.primary}>
               {store.mode === "normal" ? ">" : "!"}
             </text>
           </box>
-          <box paddingTop={1} paddingBottom={1} backgroundColor={Theme.backgroundElement} flexGrow={1}>
+          <box
+            paddingTop={1}
+            paddingBottom={1}
+            backgroundColor={Theme.backgroundElement}
+            flexGrow={1}
+          >
             <textarea
               placeholder={
                 props.showPlaceholder
@@ -523,7 +538,10 @@ export function Prompt(props: PromptProps) {
                   return
                 }
                 if (store.mode === "shell") {
-                  if ((e.name === "backspace" && input.visualCursor.offset === 0) || e.name === "escape") {
+                  if (
+                    (e.name === "backspace" && input.visualCursor.offset === 0) ||
+                    e.name === "escape"
+                  ) {
                     setStore("mode", "normal")
                     e.preventDefault()
                     return
@@ -554,7 +572,7 @@ export function Prompt(props: PromptProps) {
                     input.cursorOffset = input.plainText.length
                 }
                 if (!autocomplete.visible) {
-                  if (e.name === "escape" && props.sessionID) {
+                  if (keybind.match("session_interrupt", e) && props.sessionID) {
                     sdk.client.session.abort({
                       path: {
                         id: props.sessionID,
@@ -644,7 +662,12 @@ export function Prompt(props: PromptProps) {
               syntaxStyle={syntaxTheme}
             />
           </box>
-          <box backgroundColor={Theme.backgroundElement} width={1} justifyContent="center" alignItems="center"></box>
+          <box
+            backgroundColor={Theme.backgroundElement}
+            width={1}
+            justifyContent="center"
+            alignItems="center"
+          ></box>
         </box>
         <box flexDirection="row" justifyContent="space-between">
           <text flexShrink={0} wrapMode="none">

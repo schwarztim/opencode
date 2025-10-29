@@ -130,6 +130,10 @@ import type {
   TuiPublishData,
   TuiPublishResponses,
   TuiPublishErrors,
+  TuiControlNextData,
+  TuiControlNextResponses,
+  TuiControlResponseData,
+  TuiControlResponseResponses,
   AuthSetData,
   AuthSetResponses,
   AuthSetErrors,
@@ -759,10 +763,46 @@ class Lsp extends _HeyApiClient {
   /**
    * Get LSP server status
    */
-  public status<ThrowOnError extends boolean = false>(options?: Options<LspStatusData, ThrowOnError>) {
+  public status<ThrowOnError extends boolean = false>(
+    options?: Options<LspStatusData, ThrowOnError>,
+  ) {
     return (options?.client ?? this._client).get<LspStatusResponses, unknown, ThrowOnError>({
       url: "/lsp",
       ...options,
+    })
+  }
+}
+
+class Control extends _HeyApiClient {
+  /**
+   * Get the next TUI request from the queue
+   */
+  public next<ThrowOnError extends boolean = false>(
+    options?: Options<TuiControlNextData, ThrowOnError>,
+  ) {
+    return (options?.client ?? this._client).get<TuiControlNextResponses, unknown, ThrowOnError>({
+      url: "/tui/control/next",
+      ...options,
+    })
+  }
+
+  /**
+   * Submit a response to the TUI request queue
+   */
+  public response<ThrowOnError extends boolean = false>(
+    options?: Options<TuiControlResponseData, ThrowOnError>,
+  ) {
+    return (options?.client ?? this._client).post<
+      TuiControlResponseResponses,
+      unknown,
+      ThrowOnError
+    >({
+      url: "/tui/control/response",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options?.headers,
+      },
     })
   }
 }
@@ -899,8 +939,14 @@ class Tui extends _HeyApiClient {
   /**
    * Publish a TUI event
    */
-  public publish<ThrowOnError extends boolean = false>(options?: Options<TuiPublishData, ThrowOnError>) {
-    return (options?.client ?? this._client).post<TuiPublishResponses, TuiPublishErrors, ThrowOnError>({
+  public publish<ThrowOnError extends boolean = false>(
+    options?: Options<TuiPublishData, ThrowOnError>,
+  ) {
+    return (options?.client ?? this._client).post<
+      TuiPublishResponses,
+      TuiPublishErrors,
+      ThrowOnError
+    >({
       url: "/tui/publish",
       ...options,
       headers: {
@@ -909,6 +955,7 @@ class Tui extends _HeyApiClient {
       },
     })
   }
+  control = new Control({ client: this._client })
 }
 
 class Auth extends _HeyApiClient {
