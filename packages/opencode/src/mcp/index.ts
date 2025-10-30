@@ -199,7 +199,7 @@ export namespace MCP {
       }
     }
 
-    const result = await withTimeout(mcpClient.tools(), 5000).catch(() => {})
+    const result = await withTimeout(mcpClient.tools(), mcp.timeout ?? 5000).catch(() => { })
     if (!result) {
       await mcpClient.close()
       status = {

@@ -9,7 +9,6 @@ import { Global } from "../global"
 import fs from "fs/promises"
 import { lazy } from "../util/lazy"
 import { NamedError } from "../util/error"
-import matter from "gray-matter"
 import { Flag } from "../flag/flag"
 import { Auth } from "../auth"
 import {
@@ -21,6 +20,7 @@ import { Instance } from "../project/instance"
 import { LSPServer } from "../lsp/server"
 import { BunProc } from "@/bun"
 import { Installation } from "@/installation"
+import { ConfigMarkdown } from "./markdown"
 
 export namespace Config {
   const log = Log.create({ service: "config" })
@@ -175,8 +175,7 @@ export namespace Config {
       dot: true,
       cwd: dir,
     })) {
-      const content = await Bun.file(item).text()
-      const md = matter(content)
+      const md = await ConfigMarkdown.parse(item)
       if (!md.data) continue
 
       const name = (() => {
@@ -215,8 +214,7 @@ export namespace Config {
       dot: true,
       cwd: dir,
     })) {
-      const content = await Bun.file(item).text()
-      const md = matter(content)
+      const md = await ConfigMarkdown.parse(item)
       if (!md.data) continue
 
       // Extract relative path from agent folder for nested agents
@@ -258,8 +256,7 @@ export namespace Config {
       dot: true,
       cwd: dir,
     })) {
-      const content = await Bun.file(item).text()
-      const md = matter(content)
+      const md = await ConfigMarkdown.parse(item)
       if (!md.data) continue
 
       const config = {
@@ -303,6 +300,14 @@ export namespace Config {
         .optional()
         .describe("Environment variables to set when running the MCP server"),
       enabled: z.boolean().optional().describe("Enable or disable the MCP server on startup"),
+      timeout: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          "Timeout in ms for fetching tools from the MCP server. Defaults to 5000 (5 seconds) if not specified.",
+        ),
     })
     .strict()
     .meta({
@@ -318,6 +323,14 @@ export namespace Config {
         .record(z.string(), z.string())
         .optional()
         .describe("Headers to send with the request"),
+      timeout: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe(
+          "Timeout in ms for fetching tools from the MCP server. Defaults to 5000 (5 seconds) if not specified.",
+        ),
     })
     .strict()
     .meta({
