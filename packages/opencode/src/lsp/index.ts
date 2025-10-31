@@ -106,9 +106,7 @@ export namespace LSP {
       }
     },
     async (state) => {
-      for (const client of state.clients) {
-        await client.shutdown()
-      }
+      await Promise.all(state.clients.map((client) => client.shutdown()))
     },
   )
 

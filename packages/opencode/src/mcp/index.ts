@@ -77,7 +77,7 @@ export namespace MCP {
       }
     },
     async (state) => {
-      await Promise.all(Object.values(state.clients).map(async (client) => await client.close()))
+      await Promise.all(Object.values(state.clients).map((client) => client.close()))
     },
   )
 
@@ -199,7 +199,7 @@ export namespace MCP {
       }
     }
 
-    const result = await withTimeout(mcpClient.tools(), mcp.timeout ?? 5000).catch(() => { })
+    const result = await withTimeout(mcpClient.tools(), mcp.timeout ?? 5000).catch(() => {})
     if (!result) {
       await mcpClient.close()
       status = {
