@@ -55,13 +55,14 @@ import { DialogConfirm } from "@tui/ui/dialog-confirm"
 import { DialogTimeline } from "./dialog-timeline"
 import { Sidebar } from "./sidebar"
 import { LANGUAGE_EXTENSIONS } from "@/lsp/language"
-import parsers from "../../../../../../parsers-config.json"
+import parsers from "../../../../../../parsers-config.ts"
 import { Toast } from "../../ui/toast"
 
 addDefaultParsers(parsers.parsers)
 
 const context = createContext<{
   width: number
+  conceal: () => boolean
 }>()
 
 function use() {
@@ -84,6 +85,7 @@ export function Session() {
 
   const dimensions = useTerminalDimensions()
   const [sidebar, setSidebar] = createSignal<"show" | "hide" | "auto">("auto")
+  const [conceal, setConceal] = createSignal(true)
 
   const wide = createMemo(() => dimensions().width > 120)
   const sidebarVisible = createMemo(() => sidebar() === "show" || (sidebar() === "auto" && wide()))
@@ -281,6 +283,16 @@ export function Session() {
       },
     },
     {
+      title: "Toggle code concealment",
+      value: "session.toggle.conceal",
+      keybind: "messages_toggle_conceal" as any,
+      category: "Session",
+      onSelect: (dialog) => {
+        setConceal((prev) => !prev)
+        dialog.clear()
+      },
+    },
+    {
       title: "Page up",
       value: "session.page.up",
       keybind: "messages_page_up",
@@ -393,6 +405,7 @@ export function Session() {
         get width() {
           return contentWidth()
         },
+        conceal,
       }}
     >
       <box
@@ -736,10 +749,17 @@ function ReasoningPart(props: { part: ReasoningPart; message: AssistantMessage }
 }
 
 function TextPart(props: { part: TextPart; message: AssistantMessage }) {
+  const ctx = use()
   return (
     <Show when={props.part.text.trim()}>
       <box id={"text-" + props.part.id} paddingLeft={3} marginTop={1} flexShrink={0}>
-        <text>{props.part.text.trim()}</text>
+        <code
+          filetype="markdown"
+          drawUnstyledText={false}
+          syntaxStyle={SyntaxTheme}
+          content={props.part.text.trim()}
+          conceal={ctx.conceal()}
+        />
       </box>
     </Show>
   )

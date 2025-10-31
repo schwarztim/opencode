@@ -127,74 +127,74 @@ const syntaxThemeDark = [
   {
     scope: ["prompt"],
     style: {
-      foreground: "#56b6c2",
+      foreground: "#7dcfff",
     },
   },
   {
     scope: ["extmark.file"],
     style: {
-      foreground: "#f5a742",
+      foreground: "#ff9e64",
       bold: true,
     },
   },
   {
     scope: ["extmark.agent"],
     style: {
-      foreground: "#fab283",
+      foreground: "#bb9af7",
       bold: true,
     },
   },
   {
     scope: ["extmark.paste"],
     style: {
-      foreground: "#0a0a0a",
-      background: "#f5a742",
+      foreground: "#1a1b26",
+      background: "#ff9e64",
       bold: true,
     },
   },
   {
     scope: ["comment"],
     style: {
-      foreground: "#808080",
+      foreground: "#565f89",
       italic: true,
     },
   },
   {
     scope: ["comment.documentation"],
     style: {
-      foreground: "#808080",
+      foreground: "#565f89",
       italic: true,
     },
   },
   {
     scope: ["string", "symbol"],
     style: {
-      foreground: "#7fd88f",
+      foreground: "#9ece6a",
     },
   },
   {
     scope: ["number", "boolean"],
     style: {
-      foreground: "#f5a742",
+      foreground: "#ff9e64",
     },
   },
   {
     scope: ["character.special"],
     style: {
-      foreground: "#7fd88f",
+      foreground: "#9ece6a",
     },
   },
   {
     scope: ["keyword.return", "keyword.conditional", "keyword.repeat", "keyword.coroutine"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
       italic: true,
     },
   },
   {
     scope: ["keyword.type"],
     style: {
-      foreground: "#e5c07b",
+      foreground: "#2ac3de",
       bold: true,
       italic: true,
     },
@@ -202,80 +202,80 @@ const syntaxThemeDark = [
   {
     scope: ["keyword.function", "function.method"],
     style: {
-      foreground: "#fab283",
+      foreground: "#bb9af7",
     },
   },
   {
     scope: ["keyword"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
       italic: true,
     },
   },
   {
     scope: ["keyword.import"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
     },
   },
   {
     scope: ["operator", "keyword.operator", "punctuation.delimiter"],
     style: {
-      foreground: "#56b6c2",
+      foreground: "#89ddff",
     },
   },
   {
     scope: ["keyword.conditional.ternary"],
     style: {
-      foreground: "#56b6c2",
+      foreground: "#89ddff",
     },
   },
   {
     scope: ["variable", "variable.parameter", "function.method.call", "function.call"],
     style: {
-      foreground: "#e06c75",
+      foreground: "#7dcfff",
     },
   },
   {
     scope: ["variable.member", "function", "constructor"],
     style: {
-      foreground: "#fab283",
+      foreground: "#7aa2f7",
     },
   },
   {
     scope: ["type", "module"],
     style: {
-      foreground: "#e5c07b",
+      foreground: "#2ac3de",
     },
   },
   {
     scope: ["constant"],
     style: {
-      foreground: "#e06c75",
+      foreground: "#ff9e64",
     },
   },
   {
     scope: ["property"],
     style: {
-      foreground: "#e06c75",
+      foreground: "#73daca",
     },
   },
   {
     scope: ["class"],
     style: {
-      foreground: "#e5c07b",
+      foreground: "#2ac3de",
     },
   },
   {
     scope: ["parameter"],
     style: {
-      foreground: "#eeeeee",
+      foreground: "#e0af68",
     },
   },
   {
     scope: ["punctuation", "punctuation.bracket"],
     style: {
-      foreground: "#eeeeee",
+      foreground: "#89ddff",
     },
   },
   {
@@ -287,46 +287,337 @@ const syntaxThemeDark = [
       "constant.builtin",
     ],
     style: {
-      foreground: "#7fd88f",
+      foreground: "#f7768e",
     },
   },
   {
     scope: ["variable.super"],
     style: {
-      foreground: "#e06c75",
+      foreground: "#f7768e",
     },
   },
   {
     scope: ["string.escape", "string.regexp"],
     style: {
-      foreground: "#7fd88f",
+      foreground: "#bb9af7",
     },
   },
   {
     scope: ["keyword.directive"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
       italic: true,
     },
   },
   {
     scope: ["punctuation.special"],
     style: {
-      foreground: "#56b6c2",
+      foreground: "#89ddff",
     },
   },
   {
     scope: ["keyword.modifier"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
       italic: true,
     },
   },
   {
     scope: ["keyword.exception"],
     style: {
-      foreground: "#9d7cd8",
+      foreground: "#bb9af7",
       italic: true,
+    },
+  },
+  // Markdown specific styles
+  {
+    scope: ["markup.heading"],
+    style: {
+      foreground: "#7aa2f7",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.1"],
+    style: {
+      foreground: "#bb9af7",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.2"],
+    style: {
+      foreground: "#7aa2f7",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.3"],
+    style: {
+      foreground: "#7dcfff",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.4"],
+    style: {
+      foreground: "#73daca",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.5"],
+    style: {
+      foreground: "#9ece6a",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.heading.6"],
+    style: {
+      foreground: "#565f89",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.bold", "markup.strong"],
+    style: {
+      foreground: "#e6edf3",
+      bold: true,
+    },
+  },
+  {
+    scope: ["markup.italic"],
+    style: {
+      foreground: "#e6edf3",
+      italic: true,
+    },
+  },
+  {
+    scope: ["markup.list"],
+    style: {
+      foreground: "#ff9e64",
+    },
+  },
+  {
+    scope: ["markup.quote"],
+    style: {
+      foreground: "#565f89",
+      italic: true,
+    },
+  },
+  {
+    scope: ["markup.raw", "markup.raw.block"],
+    style: {
+      foreground: "#9ece6a",
+    },
+  },
+  {
+    scope: ["markup.raw.inline"],
+    style: {
+      foreground: "#9ece6a",
+      background: "#1a1b26",
+    },
+  },
+  {
+    scope: ["markup.link"],
+    style: {
+      foreground: "#7aa2f7",
+      underline: true,
+    },
+  },
+  {
+    scope: ["markup.link.label"],
+    style: {
+      foreground: "#7dcfff",
+      underline: true,
+    },
+  },
+  {
+    scope: ["markup.link.url"],
+    style: {
+      foreground: "#7aa2f7",
+      underline: true,
+    },
+  },
+  {
+    scope: ["label"],
+    style: {
+      foreground: "#73daca",
+    },
+  },
+  {
+    scope: ["spell", "nospell"],
+    style: {
+      foreground: "#e6edf3",
+    },
+  },
+  {
+    scope: ["conceal"],
+    style: {
+      foreground: "#565f89",
+    },
+  },
+  // Additional common highlight groups
+  {
+    scope: ["string.special", "string.special.url"],
+    style: {
+      foreground: "#73daca",
+      underline: true,
+    },
+  },
+  {
+    scope: ["character"],
+    style: {
+      foreground: "#9ece6a",
+    },
+  },
+  {
+    scope: ["float"],
+    style: {
+      foreground: "#ff9e64",
+    },
+  },
+  {
+    scope: ["comment.error"],
+    style: {
+      foreground: "#f7768e",
+      italic: true,
+      bold: true,
+    },
+  },
+  {
+    scope: ["comment.warning"],
+    style: {
+      foreground: "#e0af68",
+      italic: true,
+      bold: true,
+    },
+  },
+  {
+    scope: ["comment.todo", "comment.note"],
+    style: {
+      foreground: "#7aa2f7",
+      italic: true,
+      bold: true,
+    },
+  },
+  {
+    scope: ["namespace"],
+    style: {
+      foreground: "#2ac3de",
+    },
+  },
+  {
+    scope: ["field"],
+    style: {
+      foreground: "#73daca",
+    },
+  },
+  {
+    scope: ["type.definition"],
+    style: {
+      foreground: "#2ac3de",
+      bold: true,
+    },
+  },
+  {
+    scope: ["keyword.export"],
+    style: {
+      foreground: "#bb9af7",
+    },
+  },
+  {
+    scope: ["attribute", "annotation"],
+    style: {
+      foreground: "#e0af68",
+    },
+  },
+  {
+    scope: ["tag"],
+    style: {
+      foreground: "#f7768e",
+    },
+  },
+  {
+    scope: ["tag.attribute"],
+    style: {
+      foreground: "#bb9af7",
+    },
+  },
+  {
+    scope: ["tag.delimiter"],
+    style: {
+      foreground: "#89ddff",
+    },
+  },
+  {
+    scope: ["markup.strikethrough"],
+    style: {
+      foreground: "#565f89",
+    },
+  },
+  {
+    scope: ["markup.underline"],
+    style: {
+      foreground: "#e6edf3",
+      underline: true,
+    },
+  },
+  {
+    scope: ["markup.list.checked"],
+    style: {
+      foreground: "#9ece6a",
+    },
+  },
+  {
+    scope: ["markup.list.unchecked"],
+    style: {
+      foreground: "#565f89",
+    },
+  },
+  {
+    scope: ["diff.plus"],
+    style: {
+      foreground: "#9ece6a",
+    },
+  },
+  {
+    scope: ["diff.minus"],
+    style: {
+      foreground: "#f7768e",
+    },
+  },
+  {
+    scope: ["diff.delta"],
+    style: {
+      foreground: "#7dcfff",
+    },
+  },
+  {
+    scope: ["error"],
+    style: {
+      foreground: "#f7768e",
+      bold: true,
+    },
+  },
+  {
+    scope: ["warning"],
+    style: {
+      foreground: "#e0af68",
+      bold: true,
+    },
+  },
+  {
+    scope: ["info"],
+    style: {
+      foreground: "#7dcfff",
+    },
+  },
+  {
+    scope: ["debug"],
+    style: {
+      foreground: "#565f89",
     },
   },
 ]

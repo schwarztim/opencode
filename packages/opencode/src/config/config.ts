@@ -443,6 +443,11 @@ export namespace Config {
       messages_copy: z.string().optional().default("<leader>y").describe("Copy message"),
       messages_undo: z.string().optional().default("<leader>u").describe("Undo message"),
       messages_redo: z.string().optional().default("<leader>r").describe("Redo message"),
+      messages_toggle_conceal: z
+        .string()
+        .optional()
+        .default("<leader>h")
+        .describe("Toggle code block concealment in messages"),
       model_list: z.string().optional().default("<leader>m").describe("List available models"),
       command_list: z.string().optional().default("ctrl+p").describe("List available commands"),
       agent_list: z.string().optional().default("<leader>a").describe("List agents"),
