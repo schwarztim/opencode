@@ -207,7 +207,6 @@
         "partial-json": "0.1.7",
         "remeda": "catalog:",
         "solid-js": "catalog:",
-        "tree-sitter": "0.25.0",
         "tree-sitter-bash": "0.25.0",
         "turndown": "7.2.0",
         "ulid": "catalog:",
@@ -351,8 +350,8 @@
   },
   "trustedDependencies": [
     "sharp",
-    "tree-sitter",
     "esbuild",
+    "tree-sitter",
     "web-tree-sitter",
     "tree-sitter-bash",
   ],
