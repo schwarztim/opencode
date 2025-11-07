@@ -23,7 +23,6 @@ import { ACPSessionManager } from "./session"
 import type { ACPConfig, ACPSessionState } from "./types"
 import { Provider } from "../provider/provider"
 import { Installation } from "@/installation"
-import { Bus } from "@/bus"
 import { MessageV2 } from "@/session/message-v2"
 import { Config } from "@/config/config"
 import { MCP } from "@/mcp"
@@ -48,15 +47,16 @@ export namespace ACP {
   }
 
   export class Agent implements ACPAgent {
-    private sessionManager = new ACPSessionManager()
     private connection: AgentSideConnection
     private config: ACPConfig
-    private sdk: ACPConfig["sdk"]
+    private sdk: OpencodeClient
+    private sessionManager
 
     constructor(connection: AgentSideConnection, config: ACPConfig) {
       this.connection = connection
       this.config = config
       this.sdk = config.sdk
+      this.sessionManager = new ACPSessionManager(this.sdk)
     }
 
     private setupEventSubscriptions(session: ACPSessionState) {
@@ -390,27 +390,9 @@ export namespace ACP {
       try {
         const model = await defaultModel(this.config)
 
-        const session = await this.sdk.session
-          .create({
-            body: {
-              title: `ACP Session ${crypto.randomUUID()}`,
-            },
-            query: {
-              directory,
-            },
-            throwOnError: true,
-          })
-          .then((x) => x.data)
-
-        const sessionId = session.id
-
         // Store ACP session state
-        const state = await this.sessionManager.create(
-          sessionId,
-          params.cwd,
-          params.mcpServers,
-          model,
-        )
+        const state = await this.sessionManager.create(params.cwd, params.mcpServers, model)
+        const sessionId = state.id
 
         log.info("creating_session", { sessionId, mcpServers: params.mcpServers.length })
 
@@ -583,15 +565,15 @@ export namespace ACP {
 
     async prompt(params: PromptRequest) {
       const sessionID = params.sessionId
-      const acpSession = this.sessionManager.get(sessionID)
-      const directory = acpSession.cwd
+      const session = this.sessionManager.get(sessionID)
+      const directory = session.cwd
 
-      const current = acpSession.model
+      const current = session.model
       const model = current ?? (await defaultModel(this.config))
       if (!current) {
-        this.sessionManager.setModel(acpSession.id, model)
+        this.sessionManager.setModel(session.id, model)
       }
-      const agent = acpSession.modeId ?? "build"
+      const agent = session.modeId ?? "build"
 
       const parts: Array<
         | { type: "text"; text: string }
@@ -717,12 +699,12 @@ export namespace ACP {
     }
 
     async cancel(params: CancelNotification) {
-      const acpSession = this.sessionManager.get(params.sessionId)
+      const session = this.sessionManager.get(params.sessionId)
       await this.config.sdk.session.abort({
         path: { id: params.sessionId },
         throwOnError: true,
         query: {
-          directory: acpSession.cwd,
+          directory: session.cwd,
         },
       })
     }

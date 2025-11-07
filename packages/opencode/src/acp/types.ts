@@ -6,7 +6,7 @@ export interface ACPSessionState {
   cwd: string
   mcpServers: McpServer[]
   createdAt: Date
-  model: {
+  model?: {
     providerID: string
     modelID: string
   }

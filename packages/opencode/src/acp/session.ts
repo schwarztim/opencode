@@ -1,20 +1,37 @@
 import { RequestError, type McpServer } from "@agentclientprotocol/sdk"
-import { Provider } from "../provider/provider"
 import type { ACPSessionState } from "./types"
 import { Log } from "@/util/log"
+import type { OpencodeClient } from "@opencode-ai/sdk"
 
 const log = Log.create({ service: "acp-session-manager" })
 
 export class ACPSessionManager {
   private sessions = new Map<string, ACPSessionState>()
+  private sdk: OpencodeClient
+
+  constructor(sdk: OpencodeClient) {
+    this.sdk = sdk
+  }
 
   async create(
-    sessionId: string,
     cwd: string,
     mcpServers: McpServer[],
     model?: ACPSessionState["model"],
   ): Promise<ACPSessionState> {
-    const resolvedModel = model ?? (await Provider.defaultModel())
+    const session = await this.sdk.session
+      .create({
+        body: {
+          title: `ACP Session ${crypto.randomUUID()}`,
+        },
+        query: {
+          directory: cwd,
+        },
+        throwOnError: true,
+      })
+      .then((x) => x.data)
+
+    const sessionId = session.id
+    const resolvedModel = model
 
     const state: ACPSessionState = {
       id: sessionId,
@@ -29,7 +46,7 @@ export class ACPSessionManager {
     return state
   }
 
-  get(sessionId: string) {
+  get(sessionId: string): ACPSessionState {
     const session = this.sessions.get(sessionId)
     if (!session) {
       log.error("session not found", { sessionId })
@@ -38,31 +55,20 @@ export class ACPSessionManager {
     return session
   }
 
-  async remove(sessionId: string) {
-    this.sessions.delete(sessionId)
-  }
-
-  has(sessionId: string) {
-    return this.sessions.has(sessionId)
-  }
-
   getModel(sessionId: string) {
-    const session = this.sessions.get(sessionId)
-    if (!session) return
+    const session = this.get(sessionId)
     return session.model
   }
 
   setModel(sessionId: string, model: ACPSessionState["model"]) {
-    const session = this.sessions.get(sessionId)
-    if (!session) return
+    const session = this.get(sessionId)
     session.model = model
     this.sessions.set(sessionId, session)
     return session
   }
 
   setMode(sessionId: string, modeId: string) {
-    const session = this.sessions.get(sessionId)
-    if (!session) return
+    const session = this.get(sessionId)
     session.modeId = modeId
     this.sessions.set(sessionId, session)
     return session
