@@ -195,7 +195,7 @@ export namespace SessionPrompt {
 
   export const prompt = fn(PromptInput, async (input) => {
     const l = log.clone().tag("session", input.sessionID)
-    l.info("prompt")
+    l.info("prompt", input)
 
     const session = await Session.get(input.sessionID)
     await SessionRevert.cleanup(session)
@@ -224,22 +224,33 @@ export namespace SessionPrompt {
 
     let step = 0
     while (true) {
-      // TODO: insert reminders
-      const msgs: MessageV2.WithParts[] = await getMessages({
+      let msgs: MessageV2.WithParts[] = await getMessages({
         sessionID,
         signal: abort,
       })
       const lastUser = msgs.findLast((m) => m.info.role === "user")?.info as MessageV2.User
       if (!lastUser) throw new Error("No user message found in stream. This should never happen.")
+      log.info("last user", { id: lastUser.id, model: lastUser.model })
 
       const lastAssistant = msgs.findLast((msg) => msg.info.role === "assistant")?.info as MessageV2.Assistant
-      if (lastAssistant && lastAssistant.finish !== "tool-calls" && lastUser.id < lastAssistant.id) {
+      log.info("last assistant", { id: lastAssistant?.id })
+      if (lastAssistant?.finish && lastAssistant.finish !== "tool-calls" && lastUser.id < lastAssistant.id) {
         break
       }
 
       step++
       const model = await Provider.getModel(lastUser.model.providerID, lastUser.model.modelID)
+      msgs = await checkOverflow({
+        sessionID,
+        model: model.info,
+        abort,
+        msgs,
+      })
       const agent = await Agent.get(lastUser.agent)
+      msgs = insertReminders({
+        messages: msgs,
+        agent,
+      })
       const processor = await createProcessor({
         userMessage: lastUser,
         sessionID: sessionID,
@@ -290,10 +301,6 @@ export namespace SessionPrompt {
           messageID: lastUser.id,
         })
       }
-
-      await using _ = defer(async () => {
-        await processor.end()
-      })
 
       const stream = streamText({
         onError(error) {
@@ -385,8 +392,6 @@ export namespace SessionPrompt {
         }),
       })
       const result = await processor.process(stream)
-      await processor.end()
-
       if (result.blocked) break
       if (result.info.error) break
     }
@@ -405,55 +410,63 @@ export namespace SessionPrompt {
   }
 
   async function getMessages(input: { sessionID: string; signal: AbortSignal }) {
-    let msgs = await MessageV2.filterCompacted(MessageV2.stream(input.sessionID))
-    const lastAssistant = msgs.findLast((msg) => msg.info.role === "assistant")?.info as MessageV2.Assistant
-    if (!lastAssistant) return msgs
-    const model = await Provider.getModel(lastAssistant.providerID, lastAssistant.modelID)
-    if (
-      SessionCompaction.isOverflow({
-        tokens: lastAssistant.tokens,
-        model: model.info,
-      })
-    ) {
-      const summaryMsg = await SessionCompaction.run({
-        sessionID: input.sessionID,
-        signal: input.signal,
-        modelID: lastAssistant.modelID,
-        providerID: lastAssistant.providerID,
-      })
-      const resumeMsgID = Identifier.ascending("message")
-      const resumeMsg = {
-        info: await Session.updateMessage({
-          id: resumeMsgID,
-          role: "user",
-          sessionID: input.sessionID,
-          time: {
-            created: Date.now(),
-          },
-          model: {
-            providerID: lastAssistant.providerID,
-            modelID: lastAssistant.modelID,
-          },
-          agent: lastAssistant.mode,
-        }),
-        parts: [
-          await Session.updatePart({
-            type: "text",
-            sessionID: input.sessionID,
-            messageID: resumeMsgID,
-            id: Identifier.ascending("part"),
-            text: "Use the above summary generated from your last session to resume from where you left off.",
-            time: {
-              start: Date.now(),
-              end: Date.now(),
-            },
-            synthetic: true,
-          }),
-        ],
-      }
-      msgs = [summaryMsg, resumeMsg]
-    }
+    const msgs = await MessageV2.filterCompacted(MessageV2.stream(input.sessionID))
     return msgs
+  }
+
+  async function checkOverflow(input: {
+    sessionID: string
+    msgs: MessageV2.WithParts[]
+    model: ModelsDev.Model
+    abort: AbortSignal
+  }) {
+    const lastAssistant = input.msgs.findLast((msg) => msg.info.role === "assistant")?.info as MessageV2.Assistant
+    if (!lastAssistant) return input.msgs
+    if (
+      !SessionCompaction.isOverflow({
+        tokens: lastAssistant.tokens,
+        model: input.model,
+      })
+    )
+      return input.msgs
+    // TODO: make this more efficient
+    const summaryMsg = await SessionCompaction.run({
+      sessionID: input.sessionID,
+      signal: input.abort,
+      modelID: lastAssistant.modelID,
+      providerID: lastAssistant.providerID,
+    })
+    const resumeMsgID = Identifier.ascending("message")
+    const resumeMsg = {
+      info: await Session.updateMessage({
+        id: resumeMsgID,
+        role: "user",
+        sessionID: input.sessionID,
+        time: {
+          created: Date.now(),
+        },
+        model: {
+          providerID: lastAssistant.providerID,
+          modelID: lastAssistant.modelID,
+        },
+        agent: lastAssistant.mode,
+      }),
+      parts: [
+        await Session.updatePart({
+          type: "text",
+          sessionID: input.sessionID,
+          messageID: resumeMsgID,
+          id: Identifier.ascending("part"),
+          text: "Use the above summary generated from your last session to resume from where you left off.",
+          time: {
+            start: Date.now(),
+            end: Date.now(),
+          },
+          synthetic: true,
+        }),
+      ],
+    }
+    return [summaryMsg, resumeMsg]
   }
 
   async function resolveModel(input: { model: PromptInput["model"]; agent: Agent.Info }) {
@@ -967,10 +980,6 @@ export namespace SessionPrompt {
     await Session.updateMessage(assistantMsg)
 
     const result = {
-      async end() {
-        assistantMsg.time.completed = Date.now()
-        await Session.updateMessage(assistantMsg)
-      },
       get message() {
         return assistantMsg
       },
@@ -1349,8 +1358,8 @@ export namespace SessionPrompt {
         reasoning: 0,
         cache: { read: 0, write: 0 },
       },
-      modelID: "",
-      providerID: "",
+      modelID: model.modelID,
+      providerID: model.providerID,
     }
     await Session.updateMessage(msg)
     const part: MessageV2.Part = {
