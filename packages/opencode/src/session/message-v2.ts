@@ -586,6 +586,12 @@ export namespace MessageV2 {
               text: "What did we do so far?",
             })
           }
+          if (part.type === "subtask") {
+            userMessage.parts.push({
+              type: "text",
+              text: `Running subtask ${part.agent}: ${part.description}`,
+            })
+          }
         }
       }
 
