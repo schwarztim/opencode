@@ -638,6 +638,7 @@ export namespace MessageV2 {
                 state: "output-available",
                 toolCallId: part.callID,
                 input: part.state.input,
+                // TODO: prolly need something better here when dealing with synthetic user messages + attachments
                 output: part.state.time.compacted ? "[Old tool result content cleared]" : part.state.output,
                 callProviderMetadata: part.metadata,
               })
