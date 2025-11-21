@@ -1276,6 +1276,47 @@ export namespace Server {
           return c.json(result)
         },
       )
+      .post(
+        "/provider/:id/oauth/callback",
+        describeRoute({
+          description: "Handle OAuth callback for a provider",
+          operationId: "provider.oauth.callback",
+          responses: {
+            200: {
+              description: "OAuth callback processed successfully",
+              content: {
+                "application/json": {
+                  schema: resolver(z.boolean()),
+                },
+              },
+            },
+            ...errors(400),
+          },
+        }),
+        validator(
+          "param",
+          z.object({
+            id: z.string().meta({ description: "Provider ID" }),
+          }),
+        ),
+        validator(
+          "json",
+          z.object({
+            method: z.number().meta({ description: "Auth method index" }),
+            code: z.string().optional().meta({ description: "OAuth authorization code" }),
+          }),
+        ),
+        async (c) => {
+          const id = c.req.valid("param").id
+          const { method, code } = c.req.valid("json")
+          await ProviderAuth.callback({
+            providerID: id,
+            method,
+            code,
+          })
+          return c.json(true)
+        },
+      )
       .get(
         "/find",
         describeRoute({

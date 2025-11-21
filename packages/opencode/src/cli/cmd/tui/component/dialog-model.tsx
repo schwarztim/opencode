@@ -110,9 +110,9 @@ export function DialogModel() {
               title: provider.name,
               category: "Popular providers",
               value: provider.id,
-              footer: {
-                opencode: "Recommended",
-                anthropic: "Claude Max or API key",
+              description: {
+                opencode: "(Recommended)",
+                anthropic: "(Claude Max or API key)",
               }[provider.id],
               async onSelect() {
                 const key = await DialogPrompt.show(dialog, "Enter API key")
@@ -131,6 +131,7 @@ export function DialogModel() {
                 dialog.replace(() => <DialogModel />)
               },
             })),
+            filter((x) => PROVIDER_PRIORITY[x.value] !== undefined),
             sortBy((x) => PROVIDER_PRIORITY[x.value] ?? 99),
           )
         : []),
@@ -142,7 +143,7 @@ export function DialogModel() {
       keybind={[
         {
           keybind: { ctrl: true, name: "a", meta: false, shift: false, leader: false },
-          title: "Connect provider",
+          title: connected() ? "Connect provider" : "More providers",
           onTrigger(option) {
             dialog.replace(() => <DialogProvider />)
           },

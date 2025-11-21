@@ -73,21 +73,22 @@ export namespace ProviderAuth {
       const match = await state().then((s) => s.pending[input.providerID])
       if (!match) throw new OauthMissing({ providerID: input.providerID })
       let result
+
       if (match.method === "code") {
         if (!input.code) throw new OauthCodeMissing({ providerID: input.providerID })
         result = await match.callback(input.code)
       }
+
       if (match.method === "auto") {
         result = await match.callback()
       }
-      if (!result) return
-      if (result.type === "success") {
+
+      if (result?.type === "success") {
         if ("key" in result) {
           await Auth.set(input.providerID, {
             type: "api",
             key: result.key,
           })
-          return
         }
         if ("refresh" in result) {
           await Auth.set(input.providerID, {
@@ -96,9 +97,11 @@ export namespace ProviderAuth {
             refresh: result.refresh,
             expires: result.expires,
           })
-          return
         }
+        return
       }
+
+      throw new OauthCallbackFailed({})
     },
   )
 
@@ -127,4 +130,6 @@ export namespace ProviderAuth {
       providerID: z.string(),
     }),
   )
+
+  export const OauthCallbackFailed = NamedError.create("ProviderAuthOauthCallbackFailed", z.object({}))
 }

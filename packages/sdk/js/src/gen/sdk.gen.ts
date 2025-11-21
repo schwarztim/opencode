@@ -101,6 +101,9 @@ import type {
   ProviderOauthAuthorizeData,
   ProviderOauthAuthorizeResponses,
   ProviderOauthAuthorizeErrors,
+  ProviderOauthCallbackData,
+  ProviderOauthCallbackResponses,
+  ProviderOauthCallbackErrors,
   FindTextData,
   FindTextResponses,
   FindFilesData,
@@ -586,6 +589,24 @@ class Oauth extends _HeyApiClient {
       ThrowOnError
     >({
       url: "/provider/{id}/oauth/authorize",
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    })
+  }
+
+  /**
+   * Handle OAuth callback for a provider
+   */
+  public callback<ThrowOnError extends boolean = false>(options: Options<ProviderOauthCallbackData, ThrowOnError>) {
+    return (options.client ?? this._client).post<
+      ProviderOauthCallbackResponses,
+      ProviderOauthCallbackErrors,
+      ThrowOnError
+    >({
+      url: "/provider/{id}/oauth/callback",
       ...options,
       headers: {
         "Content-Type": "application/json",

@@ -237,12 +237,14 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           )}
         </For>
       </scrollbox>
-      <box paddingRight={2} paddingLeft={3} flexDirection="row" paddingBottom={1} gap={1}>
+      <box paddingRight={2} paddingLeft={4} flexDirection="row" paddingBottom={1} gap={1}>
         <For each={props.keybind ?? []}>
           {(item) => (
             <text>
-              <span style={{ fg: theme.text, attributes: TextAttributes.BOLD }}>{Keybind.toString(item.keybind)}</span>
-              <span style={{ fg: theme.textMuted }}> {item.title}</span>
+              <span style={{ fg: theme.text }}>
+                <b>{item.title}</b>{" "}
+              </span>
+              <span style={{ fg: theme.textMuted }}>{Keybind.toString(item.keybind)}</span>
             </text>
           )}
         </For>

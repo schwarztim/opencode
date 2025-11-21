@@ -2588,6 +2588,47 @@ export type ProviderOauthAuthorizeResponses = {
 
 export type ProviderOauthAuthorizeResponse = ProviderOauthAuthorizeResponses[keyof ProviderOauthAuthorizeResponses]
 
+export type ProviderOauthCallbackData = {
+  body?: {
+    /**
+     * Auth method index
+     */
+    method: number
+    /**
+     * OAuth authorization code
+     */
+    code?: string
+  }
+  path: {
+    /**
+     * Provider ID
+     */
+    id: string
+  }
+  query?: {
+    directory?: string
+  }
+  url: "/provider/{id}/oauth/callback"
+}
+
+export type ProviderOauthCallbackErrors = {
+  /**
+   * Bad request
+   */
+  400: BadRequestError
+}
+
+export type ProviderOauthCallbackError = ProviderOauthCallbackErrors[keyof ProviderOauthCallbackErrors]
+
+export type ProviderOauthCallbackResponses = {
+  /**
+   * OAuth callback processed successfully
+   */
+  200: boolean
+}
+
+export type ProviderOauthCallbackResponse = ProviderOauthCallbackResponses[keyof ProviderOauthCallbackResponses]
+
 export type FindTextData = {
   body?: never
   path?: never

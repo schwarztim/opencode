@@ -600,11 +600,9 @@ export function Session() {
           }
 
           // Prompt for optional filename
-          const customFilename = await DialogPrompt.show(
-            dialog,
-            "Export filename",
-            `session-${sessionData.id.slice(0, 8)}.md`,
-          )
+          const customFilename = await DialogPrompt.show(dialog, "Export filename", {
+            value: `session-${sessionData.id.slice(0, 8)}.md`,
+          })
 
           // Cancel if user pressed escape
           if (customFilename === null) return
@@ -894,7 +892,7 @@ function UserMessage(props: {
   const { theme } = useTheme()
   const [hover, setHover] = createSignal(false)
   const queued = createMemo(() => props.pending && props.message.id > props.pending)
-  const color = createMemo(() => (queued() ? theme.accent : theme.text))
+  const color = createMemo(() => (queued() ? theme.accent : theme.secondary))
 
   const compaction = createMemo(() => props.parts.find((x) => x.type === "compaction"))
 
@@ -942,7 +940,7 @@ function UserMessage(props: {
                 </For>
               </box>
             </Show>
-            <text fg={theme.text}>
+            <text fg={theme.textMuted}>
               {sync.data.config.username ?? "You"}{" "}
               <Show
                 when={queued()}
