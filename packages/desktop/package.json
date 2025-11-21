@@ -14,7 +14,7 @@
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
     "@tsconfig/bun": "1.0.9",
-    "@types/luxon": "3.7.1",
+    "@types/luxon": "catalog:",
     "@types/node": "catalog:",
     "@typescript/native-preview": "catalog:",
     "typescript": "catalog:",
