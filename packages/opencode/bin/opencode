@@ -7,11 +7,11 @@ const os = require("os")
 
 function cleanupTempDirectories() {
   if (os.platform() !== "win32") return
-  
+
   try {
     const globalNodeModules = path.join(process.env.APPDATA || "", "npm", "node_modules")
     if (!fs.existsSync(globalNodeModules)) return
-    
+
     const entries = fs.readdirSync(globalNodeModules, { withFileTypes: true })
     for (const entry of entries) {
       if (entry.isDirectory() && entry.name.startsWith(".opencode-ai-")) {
