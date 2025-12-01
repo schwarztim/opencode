@@ -162,14 +162,34 @@ export namespace Installation {
   export const CHANNEL = typeof OPENCODE_CHANNEL === "string" ? OPENCODE_CHANNEL : "local"
   export const USER_AGENT = `opencode/${CHANNEL}/${VERSION}`
 
+  async function getRegistryUrl() {
+    const result = await $`npm config get registry`.throws(false).text()
+    const registry = result.trim()
+    return registry || "https://registry.npmjs.org"
+  }
+
   export async function latest() {
     const [major] = VERSION.split(".").map((x) => Number(x))
     const channel = CHANNEL === "latest" ? `latest-${major}` : CHANNEL
-    return fetch(`https://registry.npmjs.org/opencode-ai/${channel}`)
+    const registry = await getRegistryUrl()
+    const registryUrl = registry.endsWith("/") ? registry.slice(0, -1) : registry
+    return fetch(`${registryUrl}/opencode-ai/${channel}`)
       .then((res) => {
         if (!res.ok) throw new Error(res.statusText)
         return res.json()
       })
       .then((data: any) => data.version)
+      .catch(() => {
+        // Fallback to default registry if configured registry fails
+        if (registry !== "https://registry.npmjs.org") {
+          return fetch(`https://registry.npmjs.org/opencode-ai/${channel}`)
+            .then((res) => {
+              if (!res.ok) throw new Error(res.statusText)
+              return res.json()
+            })
+            .then((data: any) => data.version)
+        }
+        throw new Error("Failed to fetch latest version")
+      })
   }
 }
