@@ -11,6 +11,16 @@
       },
     },
   },
+  "disabled_providers": [
+    "openai",
+    "google",
+    "perplexity",
+    "openrouter",
+    "opencode",
+    // "anthropic",
+    "azure",
+    "github-copilot",
+  ],
   "mcp": {
     "exa": {
       "type": "remote",

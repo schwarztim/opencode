@@ -188,6 +188,7 @@ function App() {
   })
 
   let continued = false
+  let providerPrompted = false
   createEffect(() => {
     if (continued || sync.status !== "complete" || !args.continue) return
     const match = sync.data.session.at(0)?.id
@@ -195,6 +196,22 @@ function App() {
       continued = true
       route.navigate({ type: "session", sessionID: match })
     }
+  })
+
+  createEffect(() => {
+    if (sync.status !== "complete") return
+    if (sync.data.provider.length > 0) {
+      providerPrompted = false
+      return
+    }
+    if (providerPrompted) return
+    providerPrompted = true
+    toast.show({
+      variant: "warning",
+      message: "Connect a provider to start using OpenCode",
+      duration: 4000,
+    })
+    dialog.replace(() => <DialogProviderList />)
   })
 
   command.register(() => [
@@ -367,8 +384,9 @@ function App() {
   ])
 
   createEffect(() => {
-    const providerID = local.model.current().providerID
-    if (providerID === "openrouter" && !kv.get("openrouter_warning", false)) {
+    const currentModel = local.model.current()
+    if (!currentModel) return
+    if (currentModel.providerID === "openrouter" && !kv.get("openrouter_warning", false)) {
       untrack(() => {
         DialogAlert.show(
           dialog,
