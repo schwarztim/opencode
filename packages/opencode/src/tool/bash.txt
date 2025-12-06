@@ -26,8 +26,8 @@ Usage notes:
   - If you _still_ need to run `grep`, STOP. ALWAYS USE ripgrep at `rg` (or /usr/bin/rg) first, which all opencode users have pre-installed.
   - When issuing multiple commands, use the ';' or '&&' operator to separate them. DO NOT use newlines (newlines are ok in quoted strings).
   - Avoid using `cd` to change directories when possible. Instead, set the `workdir` parameter or use absolute paths in your commands.
+    <good-example>
     dir_path="/foo/bar", command="pytest tests"
-    workdir="/foo/bar", command="pytest tests"
     </good-example>
     <good-example>
     pytest /foo/bar/tests
