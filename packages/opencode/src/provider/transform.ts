@@ -212,10 +212,12 @@ export namespace ProviderTransform {
   ): Record<string, any> {
     const result: Record<string, any> = {}
 
-    // switch to providerID later, for now use this
     if (model.api.npm === "@openrouter/ai-sdk-provider") {
       result["usage"] = {
         include: true,
+      }
+      if (model.api.id.includes("gemini-3")) {
+        result["reasoning"] = { effort: "high" }
       }
     }
 
@@ -227,9 +229,6 @@ export namespace ProviderTransform {
       result["promptCacheKey"] = sessionID
     }
 
-    if (model.api.npm === "@openrouter/ai-sdk-provider" && model.api.id.includes("gemini-3")) {
-      result["reasoning"] = { effort: "high" }
-    }
     if (model.api.npm === "@ai-sdk/google" || model.api.npm === "@ai-sdk/google-vertex") {
       result["thinkingConfig"] = {
         thinkingLevel: "high",
