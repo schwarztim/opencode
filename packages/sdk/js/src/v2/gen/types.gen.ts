@@ -90,6 +90,9 @@ export type UserMessage = {
   tools?: {
     [key: string]: boolean
   }
+  thinking?: {
+    effort: "low" | "medium" | "high"
+  }
 }
 
 export type ProviderAuthError = {

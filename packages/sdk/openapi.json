@@ -5023,6 +5023,16 @@
             "additionalProperties": {
               "type": "boolean"
             }
+          },
+          "thinking": {
+            "type": "object",
+            "properties": {
+              "effort": {
+                "type": "string",
+                "enum": ["low", "medium", "high"]
+              }
+            },
+            "required": ["effort"]
           }
         },
         "required": ["id", "sessionID", "role", "time", "agent", "model"]
