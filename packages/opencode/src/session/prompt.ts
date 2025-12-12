@@ -50,6 +50,7 @@ import { fn } from "@/util/fn"
 import { SessionProcessor } from "./processor"
 import { TaskTool } from "@/tool/task"
 import { SessionStatus } from "./status"
+import { Shell } from "@/shell/shell"
 
 // @ts-ignore
 globalThis.AI_SDK_LOG_WARNINGS = false
@@ -1244,7 +1245,7 @@ export namespace SessionPrompt {
       },
     }
     await Session.updatePart(part)
-    const shell = process.env["SHELL"] ?? (process.platform === "win32" ? process.env["COMSPEC"] || "cmd.exe" : "bash")
+    const shell = Shell.preferred()
     const shellName = path.basename(shell).toLowerCase()
 
     const invocations: Record<string, { args: string[] }> = {
@@ -1281,6 +1282,9 @@ export namespace SessionPrompt {
       },
       // Windows PowerShell
       "powershell.exe": {
+        args: ["-NoProfile", "-Command", input.command],
+      },
+      pwsh: {
         args: ["-NoProfile", "-Command", input.command],
       },
       // Fallback: any shell that doesn't match those above
