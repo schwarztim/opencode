@@ -1295,12 +1295,12 @@ export namespace SessionPrompt {
       input.history.filter((m) => m.info.role === "user" && !m.parts.every((p) => "synthetic" in p && p.synthetic))
         .length === 1
     if (!isFirst) return
-    const agent = await Agent.get("summary")
+    const agent = await Agent.get("title")
     if (!agent) return
     const result = await LLM.stream({
       agent,
       user: input.message.info as MessageV2.User,
-      system: [agent.prompt!],
+      system: [],
       small: true,
       tools: {},
       model: await iife(async () => {
