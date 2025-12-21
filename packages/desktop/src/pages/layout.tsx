@@ -37,6 +37,7 @@ import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { DialogSelectProvider } from "@/components/dialog-select-provider"
 import { useCommand } from "@/context/command"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
+import { ReleaseNotesHandler } from "@/components/release-notes-handler"
 
 export default function Layout(props: ParentProps) {
   const [store, setStore] = createStore({
@@ -758,6 +759,7 @@ export default function Layout(props: ParentProps) {
         <main class="size-full overflow-x-hidden flex flex-col items-start">{props.children}</main>
       </div>
       <Toast.Region />
+      <ReleaseNotesHandler />
     </div>
   )
 }
