@@ -56,6 +56,7 @@ export default function Layout(props: ParentProps) {
   const [store, setStore] = createStore({
     lastSession: {} as { [directory: string]: string },
     activeDraggable: undefined as string | undefined,
+    helpDropdownWidth: undefined as number | undefined,
   })
 
   let scrollContainerRef: HTMLDivElement | undefined
@@ -762,8 +763,18 @@ export default function Layout(props: ParentProps) {
             {/*     <Show when={layout.sidebar.opened()}>Settings</Show> */}
             {/*   </Button> */}
             {/* </Tooltip> */}
-            <DropdownMenu placement={layout.shortcuts.opened() ? "top-start" : "bottom-start"}>
-              <Tooltip placement="right" value="Help" inactive={layout.sidebar.opened()}>
+            <Tooltip placement="right" value="Help" inactive={layout.sidebar.opened()}>
+              <DropdownMenu
+                placement="top-start"
+                gutter={8}
+                onOpenChange={(open) => {
+                  if (open && layout.sidebar.opened()) {
+                    setStore("helpDropdownWidth", layout.sidebar.width() - 16)
+                  } else if (!open) {
+                    setStore("helpDropdownWidth", undefined)
+                  }
+                }}
+              >
                 <DropdownMenu.Trigger
                   as={Button}
                   class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
@@ -773,18 +784,22 @@ export default function Layout(props: ParentProps) {
                 >
                   <Show when={layout.sidebar.opened()}>Help</Show>
                 </DropdownMenu.Trigger>
-              </Tooltip>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content>
-                  <DropdownMenu.Item as="a" href="https://opencode.ai/desktop-feedback" target="_blank">
-                    Submit feedback
-                  </DropdownMenu.Item>
-                  <DropdownMenu.Item class="flex justify-between gap-6" onSelect={() => layout.shortcuts.toggle()}>
-                    Keyboard shortcuts <span class="text-text-weaker">{formatKeybind("ctrl+/")}</span>
-                  </DropdownMenu.Item>
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content
+                    style={{
+                      width: store.helpDropdownWidth ? `${store.helpDropdownWidth}px` : undefined,
+                    }}
+                  >
+                    <DropdownMenu.Item as="a" href="https://opencode.ai/desktop-feedback" target="_blank">
+                      Submit feedback
+                    </DropdownMenu.Item>
+                    <DropdownMenu.Item class="flex justify-between gap-6" onSelect={() => layout.shortcuts.toggle()}>
+                      Keyboard shortcuts <span class="text-text-weaker">{formatKeybind("ctrl+/")}</span>
+                    </DropdownMenu.Item>
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu>
+            </Tooltip>
           </div>
         </div>
         <main

@@ -205,7 +205,7 @@ export function ShortcutsPanel(props: { onClose: () => void }) {
             placement="top"
             value={
               <span>
-                Close shortcuts <span class="text-text-weak">{formatKeybind("ctrl+/")}</span>
+                Close <span class="text-text-weak">{formatKeybind("ctrl+/")}</span>
               </span>
             }
           >
