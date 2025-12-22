@@ -149,11 +149,15 @@ export function DialogReleaseNotes(props: { release?: ReleaseNote }) {
               {release.features.map((_, i) => (
                 <button
                   type="button"
-                  class="w-8 h-6 flex items-center cursor-pointer bg-transparent border-none p-0"
+                  class="h-6 flex items-center cursor-pointer bg-transparent border-none p-0 transition-all duration-200"
+                  classList={{
+                    "w-8": i === index(),
+                    "w-3": i !== index(),
+                  }}
                   onClick={() => setIndex(i)}
                 >
                   <div
-                    class="w-full h-0.5 rounded-[1px] transition-colors"
+                    class="w-full h-0.5 rounded-[1px] transition-colors duration-200"
                     classList={{
                       "bg-icon-strong-base": i === index(),
                       "bg-icon-weak-base": i !== index(),
