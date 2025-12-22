@@ -151,6 +151,20 @@ function DialogCommand(props: { options: CommandOption[] }) {
   )
 }
 
+const USED_SHORTCUTS_KEY = "opencode:used-shortcuts"
+
+function getUsedShortcuts(): Set<string> {
+  const stored = localStorage.getItem(USED_SHORTCUTS_KEY)
+  return stored ? new Set(JSON.parse(stored)) : new Set()
+}
+
+function markShortcutUsed(keybind: string) {
+  const used = getUsedShortcuts()
+  used.add(keybind)
+  localStorage.setItem(USED_SHORTCUTS_KEY, JSON.stringify([...used]))
+  window.dispatchEvent(new CustomEvent("shortcut-used", { detail: keybind }))
+}
+
 export const { use: useCommand, provider: CommandProvider } = createSimpleContext({
   name: "Command",
   init: () => {
@@ -185,6 +199,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
       const paletteKeybinds = parseKeybind("mod+shift+p")
       if (matchKeybind(paletteKeybinds, event)) {
         event.preventDefault()
+        markShortcutUsed("mod+shift+p")
         showPalette()
         return
       }
@@ -196,6 +211,7 @@ export const { use: useCommand, provider: CommandProvider } = createSimpleContex
         const keybinds = parseKeybind(option.keybind)
         if (matchKeybind(keybinds, event)) {
           event.preventDefault()
+          markShortcutUsed(option.keybind)
           option.onSelect?.("keybind")
           return
         }

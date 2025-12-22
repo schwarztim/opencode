@@ -1,4 +1,16 @@
-import { createEffect, createMemo, createSignal, For, Match, ParentProps, Show, Switch, type JSX } from "solid-js"
+import {
+  createEffect,
+  createMemo,
+  createSignal,
+  For,
+  Match,
+  ParentProps,
+  Show,
+  Switch,
+  type JSX,
+  onCleanup,
+  onMount,
+} from "solid-js"
 import { DateTime } from "luxon"
 import { A, useNavigate, useParams } from "@solidjs/router"
 import { useLayout, getAvatarColors } from "@/context/layout"
@@ -38,11 +50,13 @@ import { DialogSelectProvider } from "@/components/dialog-select-provider"
 import { useCommand } from "@/context/command"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import { ReleaseNotesHandler } from "@/components/release-notes-handler"
+import { ShortcutsPanel } from "@/components/shortcuts-panel"
 
 export default function Layout(props: ParentProps) {
   const [store, setStore] = createStore({
     lastSession: {} as { [directory: string]: string },
     activeDraggable: undefined as string | undefined,
+    shortcutsOpen: false,
   })
 
   let scrollContainerRef: HTMLDivElement | undefined
@@ -172,6 +186,13 @@ export default function Layout(props: ParentProps) {
       category: "View",
       keybind: "mod+b",
       onSelect: () => layout.sidebar.toggle(),
+    },
+    {
+      id: "shortcuts.toggle",
+      title: "Toggle shortcuts panel",
+      category: "View",
+      keybind: "ctrl+/",
+      onSelect: () => setStore("shortcutsOpen", !store.shortcutsOpen),
     },
     ...(platform.openDirectoryPickerDialog
       ? [
@@ -741,23 +762,41 @@ export default function Layout(props: ParentProps) {
             {/*     <Show when={layout.sidebar.opened()}>Settings</Show> */}
             {/*   </Button> */}
             {/* </Tooltip> */}
-            <Tooltip placement="right" value="Share feedback" inactive={layout.sidebar.opened()}>
-              <Button
-                as={"a"}
-                href="https://opencode.ai/desktop-feedback"
-                target="_blank"
-                class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
-                variant="ghost"
-                size="large"
-                icon="bubble-5"
-              >
-                <Show when={layout.sidebar.opened()}>Share feedback</Show>
-              </Button>
-            </Tooltip>
+            <DropdownMenu>
+              <Tooltip placement="right" value="Help" inactive={layout.sidebar.opened()}>
+                <DropdownMenu.Trigger
+                  as={Button}
+                  class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
+                  variant="ghost"
+                  size="large"
+                  icon="question-mark"
+                >
+                  <Show when={layout.sidebar.opened()}>Help</Show>
+                </DropdownMenu.Trigger>
+              </Tooltip>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content>
+                  <DropdownMenu.Item as="a" href="https://opencode.ai/desktop-feedback" target="_blank">
+                    Submit feedback
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item onSelect={() => setStore("shortcutsOpen", true)}>
+                    Keyboard shortcuts
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu>
           </div>
         </div>
-        <main class="size-full overflow-x-hidden flex flex-col items-start">{props.children}</main>
+        <main
+          class="size-full overflow-x-hidden flex flex-col items-start"
+          classList={{ "shortcuts-open": store.shortcutsOpen }}
+        >
+          {props.children}
+        </main>
       </div>
+      <Show when={store.shortcutsOpen}>
+        <ShortcutsPanel onClose={() => setStore("shortcutsOpen", false)} />
+      </Show>
       <Toast.Region />
       <ReleaseNotesHandler />
     </div>
