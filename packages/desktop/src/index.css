@@ -45,16 +45,6 @@
   display: flex;
   flex-direction: column;
   height: 280px;
-  animation: slide-up 0.2s ease-out;
-}
-
-@keyframes slide-up {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
 }
 
 .shortcuts-panel [data-component="tabs"] {
@@ -71,7 +61,7 @@
   justify-content: center;
   width: 100%;
   position: relative;
-  padding: 16px 0;
+  padding: 12px 16px;
 }
 
 .shortcuts-tabs-row > [data-component="icon-button"] {

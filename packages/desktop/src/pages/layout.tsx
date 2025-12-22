@@ -779,7 +779,7 @@ export default function Layout(props: ParentProps) {
                   <DropdownMenu.Item as="a" href="https://opencode.ai/desktop-feedback" target="_blank">
                     Submit feedback
                   </DropdownMenu.Item>
-                  <DropdownMenu.Item class="flex justify-between gap-6" onSelect={() => layout.shortcuts.open()}>
+                  <DropdownMenu.Item class="flex justify-between gap-6" onSelect={() => layout.shortcuts.toggle()}>
                     Keyboard shortcuts <span class="text-text-weaker">{formatKeybind("ctrl+/")}</span>
                   </DropdownMenu.Item>
                 </DropdownMenu.Content>
