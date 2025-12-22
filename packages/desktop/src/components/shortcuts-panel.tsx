@@ -3,7 +3,7 @@ import { Tabs } from "@opencode-ai/ui/tabs"
 import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
-import { parseKeybind } from "@/context/command"
+import { parseKeybind, formatKeybind } from "@/context/command"
 
 const IS_MAC = typeof navigator === "object" && /(Mac|iPod|iPhone|iPad)/.test(navigator.platform)
 
@@ -163,10 +163,14 @@ function ShortcutItem(props: { shortcut: Shortcut }) {
             <For each={getKeyChars(props.shortcut.keybind)}>
               {(char) => {
                 const tooltip = SPECIAL_CHAR_NAMES[char]
+                const isSpecial = tooltip && !isLetter(char)
+                const isShift = char === "⇧"
                 return (
-                  <Show when={tooltip && !isLetter(char)} fallback={<kbd class="shortcut-key">{char}</kbd>}>
+                  <Show when={isSpecial} fallback={<kbd class="shortcut-key">{char}</kbd>}>
                     <Tooltip value={tooltip} placement="top">
-                      <kbd class="shortcut-key">{char}</kbd>
+                      <kbd class="shortcut-key shortcut-key-special">
+                        <span classList={{ "shortcut-key-shift": isShift }}>{char}</span>
+                      </kbd>
                     </Tooltip>
                   </Show>
                 )
@@ -197,7 +201,16 @@ export function ShortcutsPanel(props: { onClose: () => void }) {
               {(category) => <Tabs.Trigger value={category.name}>{category.name}</Tabs.Trigger>}
             </For>
           </Tabs.List>
-          <IconButton icon="close" variant="ghost" onClick={props.onClose} />
+          <Tooltip
+            placement="top"
+            value={
+              <span>
+                Close shortcuts <span class="text-text-weak">{formatKeybind("ctrl+/")}</span>
+              </span>
+            }
+          >
+            <IconButton icon="close" variant="ghost" onClick={props.onClose} />
+          </Tooltip>
         </div>
         <For each={SHORTCUT_CATEGORIES}>
           {(category) => (

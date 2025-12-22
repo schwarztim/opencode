@@ -882,6 +882,7 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
               onSelect={local.agent.set}
               class="capitalize"
               variant="ghost"
+              placement={layout.shortcuts.opened() ? "top-start" : "bottom-start"}
             />
             <Button
               as="div"

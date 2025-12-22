@@ -1,5 +1,5 @@
 import { createStore, produce } from "solid-js/store"
-import { batch, createMemo, onMount } from "solid-js"
+import { batch, createMemo, createSignal, onMount } from "solid-js"
 import { createSimpleContext } from "@opencode-ai/ui/context"
 import { makePersisted } from "@solid-primitives/storage"
 import { useGlobalSync } from "./global-sync"
@@ -52,6 +52,8 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         name: "layout.v3",
       },
     )
+
+    const [shortcutsOpened, setShortcutsOpened] = createSignal(false)
 
     const usedColors = new Set<AvatarColorKey>()
 
@@ -159,6 +161,18 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         tab() {
           setStore("review", "state", "tab")
+        },
+      },
+      shortcuts: {
+        opened: shortcutsOpened,
+        open() {
+          setShortcutsOpened(true)
+        },
+        close() {
+          setShortcutsOpened(false)
+        },
+        toggle() {
+          setShortcutsOpened((x) => !x)
         },
       },
       tabs(sessionKey: string) {

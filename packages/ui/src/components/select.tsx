@@ -15,6 +15,7 @@ export type SelectProps<T> = Omit<ComponentProps<typeof Kobalte<T>>, "value" | "
   class?: ComponentProps<"div">["class"]
   classList?: ComponentProps<"div">["classList"]
   children?: (item: T | undefined) => JSX.Element
+  placement?: "bottom-start" | "bottom-end" | "top-start" | "top-end"
 }
 
 export function Select<T>(props: SelectProps<T> & ButtonProps) {
@@ -29,6 +30,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
     "groupBy",
     "onSelect",
     "children",
+    "placement",
   ])
   const grouped = createMemo(() => {
     const result = pipe(
@@ -46,7 +48,7 @@ export function Select<T>(props: SelectProps<T> & ButtonProps) {
     <Kobalte<T, { category: string; options: T[] }>
       {...others}
       data-component="select"
-      placement="bottom-start"
+      placement={local.placement ?? "bottom-start"}
       value={local.current}
       options={grouped()}
       optionValue={(x) => (local.value ? local.value(x) : (x as string))}
