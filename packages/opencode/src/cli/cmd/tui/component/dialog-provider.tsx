@@ -24,7 +24,7 @@ export function createDialogProviderOptions() {
   const dialog = useDialog()
   const sdk = useSDK()
   const options = createMemo(() => {
-    return pipe(
+    const providerOptions = pipe(
       sync.data.provider_next.all,
       sortBy((x) => PROVIDER_PRIORITY[x.id] ?? 99),
       map((provider) => ({
@@ -84,6 +84,19 @@ export function createDialogProviderOptions() {
         },
       })),
     )
+
+    // Add "Other" option for custom providers
+    providerOptions.push({
+      title: "Other",
+      value: "other",
+      description: "(Custom provider)",
+      category: "Other",
+      async onSelect() {
+        dialog.replace(() => <CustomProviderMethod />)
+      },
+    })
+
+    return providerOptions
   })
   return options
 }
@@ -220,5 +233,60 @@ function ApiMethod(props: ApiMethodProps) {
         dialog.replace(() => <DialogModel providerID={props.providerID} />)
       }}
     />
+  )
+}
+
+function CustomProviderMethod() {
+  const dialog = useDialog()
+  const sdk = useSDK()
+  const sync = useSync()
+  const { theme } = useTheme()
+  const [providerID, setProviderID] = createSignal<string | null>(null)
+
+  return (
+    <Show
+      when={providerID()}
+      fallback={
+        <DialogPrompt
+          title="Custom provider"
+          placeholder="Provider ID (a-z, 0-9, hyphens)"
+          description={() => (
+            <text fg={theme.textMuted}>Enter a unique identifier for your custom provider (e.g. my-provider)</text>
+          )}
+          onConfirm={(value) => {
+            if (!value) return
+            const cleaned = value.replace(/^@ai-sdk\//, "")
+            if (!cleaned.match(/^[0-9a-z-]+$/)) return
+            setProviderID(cleaned)
+          }}
+        />
+      }
+    >
+      <DialogPrompt
+        title="API key"
+        placeholder="API key"
+        description={() => (
+          <box gap={1}>
+            <text fg={theme.textMuted}>
+              This only stores a credential for <span style={{ fg: theme.text }}>{providerID()}</span> - you will need
+              to configure it in opencode.json
+            </text>
+          </box>
+        )}
+        onConfirm={async (value) => {
+          if (!value) return
+          sdk.client.auth.set({
+            providerID: providerID()!,
+            auth: {
+              type: "api",
+              key: value,
+            },
+          })
+          await sdk.client.instance.dispose()
+          await sync.bootstrap()
+          dialog.clear()
+        }}
+      />
+    </Show>
   )
 }
