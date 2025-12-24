@@ -134,6 +134,9 @@ export type ApiError = {
       [key: string]: string
     }
     responseBody?: string
+    details?: {
+      [key: string]: string
+    }
   }
 }
 

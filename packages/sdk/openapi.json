@@ -5346,6 +5346,15 @@
               },
               "responseBody": {
                 "type": "string"
+              },
+              "details": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "string"
+                }
               }
             },
             "required": ["message", "isRetryable"]
