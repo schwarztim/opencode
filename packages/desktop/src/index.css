@@ -76,6 +76,7 @@
   height: auto;
   justify-content: center;
   gap: 24px;
+  padding: 4px;
 }
 
 .shortcuts-panel [data-slot="tabs-list"]::after {
@@ -101,6 +102,12 @@
 
 .shortcuts-panel [data-slot="tabs-trigger"] {
   padding: 4px 12px;
+  border-radius: 6px;
+}
+
+.shortcuts-panel [data-slot="tabs-trigger"]:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-xs-border-focus);
 }
 
 .shortcuts-panel [data-slot="tabs-content"] {

@@ -185,18 +185,23 @@ function ShortcutItem(props: { shortcut: Shortcut }) {
 
 export function ShortcutsPanel(props: { onClose: () => void }) {
   const [activeTab, setActiveTab] = createSignal(SHORTCUT_CATEGORIES[0].name)
+  let listRef: HTMLDivElement | undefined
 
   onMount(() => {
     const handler = () => setUsedShortcuts(getUsedShortcuts())
     window.addEventListener("shortcut-used", handler)
     onCleanup(() => window.removeEventListener("shortcut-used", handler))
+
+    // Focus the active tab trigger so arrow keys work immediately
+    const trigger = listRef?.querySelector<HTMLButtonElement>('[data-slot="tabs-trigger"][data-selected]')
+    trigger?.focus()
   })
 
   return (
     <div class="shortcuts-panel" data-component="shortcuts-panel">
       <Tabs value={activeTab()} onChange={setActiveTab}>
         <div class="shortcuts-tabs-row">
-          <Tabs.List class="shortcuts-tabs-list">
+          <Tabs.List ref={listRef} class="shortcuts-tabs-list">
             <For each={SHORTCUT_CATEGORIES}>
               {(category) => <Tabs.Trigger value={category.name}>{category.name}</Tabs.Trigger>}
             </For>
