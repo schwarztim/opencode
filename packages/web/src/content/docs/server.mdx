@@ -13,7 +13,7 @@ The `opencode serve` command runs a headless HTTP server that exposes an OpenAPI
 ### Usage
 
 ```bash
-opencode serve [--port <number>] [--hostname <string>]
+opencode serve [--port <number>] [--hostname <string>] [--mdns]
 ```
 
 #### Options
@@ -23,6 +23,15 @@ opencode serve [--port <number>] [--hostname <string>]
 | `--port`     | Port to listen on     | `4096`      |
 | `--hostname` | Hostname to listen on | `127.0.0.1` |
 | `--mdns`     | Enable mDNS discovery | `false`     |
+
+---
+
+### mDNS discovery
+
+If you pass `--mdns`, OpenCode publishes a Bonjour/mDNS service named `opencode` on your local network. This makes the server discoverable as `http://opencode.local:<port>` on most systems.
+
+- When `--mdns` is enabled and you don’t set `--hostname`, the hostname defaults to `0.0.0.0` so other devices can reach it.
+- If you keep `--hostname` on a loopback address (`127.0.0.1`, `localhost`, `::1`), mDNS publishing is skipped.
 
 ---
 

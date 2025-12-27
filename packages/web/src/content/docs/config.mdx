@@ -122,9 +122,9 @@ Available options:
 
 ### Server
 
-You can configure server settings for the `opencode serve` and `opencode web` commands through the `server` option.
+You can configure server settings for the `opencode serve` and `opencode web` commands through the `server` option. These settings are read from your **global config** at `~/.config/opencode/opencode.json` (CLI flags still override config).
 
-```json title="opencode.json"
+```json title="~/.config/opencode/opencode.json"
 {
   "$schema": "https://opencode.ai/config.json",
   "server": {
