@@ -21,6 +21,7 @@ import { Editor } from "@tui/util/editor"
 import { useExit } from "../../context/exit"
 import { Clipboard } from "../../util/clipboard"
 import type { FilePart } from "@opencode-ai/sdk/v2"
+import type { MessageV2 } from "@/session/message-v2"
 import { TuiEvent } from "../../event"
 import { iife } from "@/util/iife"
 import { Locale } from "@/util/locale"
@@ -171,6 +172,7 @@ export function Prompt(props: PromptProps) {
     extmarkToPartIndex: Map<number, number>
     interrupt: number
     placeholder: number
+    effort: MessageV2.Thinking["effort"]
   }>({
     placeholder: Math.floor(Math.random() * PLACEHOLDERS.length),
     prompt: {
@@ -180,6 +182,7 @@ export function Prompt(props: PromptProps) {
     mode: "normal",
     extmarkToPartIndex: new Map(),
     interrupt: 0,
+    effort: "default",
   })
 
   command.register(() => {
@@ -510,6 +513,7 @@ export function Prompt(props: PromptProps) {
         parts: [],
       })
       setStore("extmarkToPartIndex", new Map())
+      setStore("effort", "default")
     },
     submit() {
       submit()
@@ -841,6 +845,14 @@ export function Prompt(props: PromptProps) {
                     return
                   }
                 }
+                if (keybind.match("effort_cycle", e)) {
+                  e.preventDefault()
+                  const levels: MessageV2.Thinking["effort"][] = ["default", "medium", "high"]
+                  const currentIndex = levels.indexOf(store.effort)
+                  const nextIndex = (currentIndex + 1) % levels.length
+                  setStore("effort", levels[nextIndex])
+                  return
+                }
                 if (store.mode === "normal") autocomplete.onKeyDown(e)
                 if (!autocomplete.visible) {
                   if (
@@ -956,6 +968,12 @@ export function Prompt(props: PromptProps) {
                     {local.model.parsed().model}
                   </text>
                   <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
+                  <Show when={store.effort !== "default"}>
+                    <text fg={theme.textMuted}>·</text>
+                    <text>
+                      <span style={{ fg: theme.warning, bold: true }}>{store.effort}</span>
+                    </text>
+                  </Show>
                 </box>
               </Show>
             </box>

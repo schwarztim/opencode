@@ -91,7 +91,7 @@ export type UserMessage = {
     [key: string]: boolean
   }
   thinking?: {
-    effort: "low" | "medium" | "high"
+    effort: "default" | "medium" | "high"
   }
 }
 
@@ -972,6 +972,10 @@ export type KeybindsConfig = {
    * Previous agent
    */
   agent_cycle_reverse?: string
+  /**
+   * Cycle thinking effort level
+   */
+  effort_cycle?: string
   /**
    * Clear input field
    */

@@ -245,7 +245,7 @@ export namespace ProviderTransform {
   }
 
   export function thinking(model: Provider.Model, thinking: MessageV2.Thinking) {
-    if (!model.capabilities.reasoning) return undefined
+    if (!model.capabilities.reasoning || thinking.effort === "default") return undefined
 
     switch (model.api.npm) {
       case "@openrouter/ai-sdk-provider":
