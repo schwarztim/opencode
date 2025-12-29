@@ -8,6 +8,7 @@ import { SplitBorder } from "../../component/border"
 import { useSync } from "../../context/sync"
 import path from "path"
 import { LANGUAGE_EXTENSIONS } from "@/lsp/language"
+import { Locale } from "@/util/locale"
 
 function normalizePath(input?: string) {
   if (!input) return ""
@@ -30,9 +31,8 @@ function EditBody(props: { request: PermissionRequest }) {
   const sync = useSync()
   const dimensions = useTerminalDimensions()
 
-  const metadata = props.request.metadata as { filepath?: string; diff?: string }
-  const filepath = createMemo(() => metadata.filepath ?? "")
-  const diff = createMemo(() => metadata.diff ?? "")
+  const filepath = createMemo(() => (props.request.metadata?.filepath as string) ?? "")
+  const diff = createMemo(() => (props.request.metadata?.diff as string) ?? "")
 
   const view = createMemo(() => {
     const diffStyle = sync.data.config.tui?.diff_style
@@ -44,7 +44,7 @@ function EditBody(props: { request: PermissionRequest }) {
 
   return (
     <box flexDirection="column" gap={1}>
-      <box flexDirection="row" gap={1}>
+      <box flexDirection="row" gap={1} paddingLeft={1}>
         <text fg={theme.textMuted}>{"→"}</text>
         <text fg={theme.textMuted}>Edit {normalizePath(filepath())}</text>
       </box>
@@ -75,32 +75,50 @@ function EditBody(props: { request: PermissionRequest }) {
   )
 }
 
-function TextBody(props: { text: string }) {
+function TextBody(props: { title: string; description?: string; icon: string }) {
   const { theme } = useTheme()
   return (
-    <box flexDirection="row" gap={1}>
-      <text fg={theme.textMuted} flexShrink={0}>
-        {"→"}
-      </text>
-      <text fg={theme.textMuted}>{props.text}</text>
-    </box>
+    <>
+      <box flexDirection="row" gap={1} paddingLeft={1}>
+        <text fg={theme.textMuted} flexShrink={0}>
+          {props.icon}
+        </text>
+        <text fg={theme.textMuted}>{props.title}</text>
+      </box>
+      <Show when={props.description}>
+        <box paddingLeft={1}>
+          <text fg={theme.text}>{props.description}</text>
+        </box>
+      </Show>
+    </>
   )
 }
 
 export function PermissionPrompt(props: { request: PermissionRequest }) {
   const sdk = useSDK()
+  const sync = useSync()
   const [store, setStore] = createStore({
     always: false,
   })
 
-  const metadata = props.request.metadata as { filepath?: string }
+  const input = createMemo(() => {
+    const tool = props.request.tool
+    if (!tool) return {}
+    const parts = sync.data.part[tool.messageID] ?? []
+    for (const part of parts) {
+      if (part.type === "tool" && part.callID === tool.callID && part.state.status !== "pending") {
+        return part.state.input ?? {}
+      }
+    }
+    return {}
+  })
 
   return (
     <Switch>
       <Match when={store.always}>
         <Prompt
           title="Always allow"
-          body={<TextBody text={props.request.always.join("\n")} />}
+          body={<TextBody icon="→" title={props.request.always.join("\n")} />}
           options={{ confirm: "Confirm", cancel: "Cancel" }}
           onSelect={(option) => {
             if (option === "cancel") {
@@ -114,27 +132,61 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
           }}
         />
       </Match>
-      <Match when={props.request.permission === "edit" && !store.always}>
-        <Prompt
-          title="Permission required"
-          body={<EditBody request={props.request} />}
-          options={{ once: "Allow once", always: "Allow always", reject: "Reject" }}
-          onSelect={(option) => {
-            if (option === "always") {
-              setStore("always", true)
-              return
-            }
-            sdk.client.permission.reply({
-              reply: option as "once" | "reject",
-              requestID: props.request.id,
-            })
-          }}
-        />
-      </Match>
       <Match when={!store.always}>
         <Prompt
           title="Permission required"
-          body={<TextBody text={props.request.message} />}
+          body={
+            <Switch>
+              <Match when={props.request.permission === "edit"}>
+                <EditBody request={props.request} />
+              </Match>
+              <Match when={props.request.permission === "read"}>
+                <TextBody icon="→" title={`Read ` + normalizePath(input().filePath as string)} />
+              </Match>
+              <Match when={props.request.permission === "glob"}>
+                <TextBody icon="✱" title={`Glob "` + (input().pattern ?? "") + `"`} />
+              </Match>
+              <Match when={props.request.permission === "grep"}>
+                <TextBody icon="✱" title={`Grep "` + (input().pattern ?? "") + `"`} />
+              </Match>
+              <Match when={props.request.permission === "list"}>
+                <TextBody icon="→" title={`List ` + normalizePath(input().path as string)} />
+              </Match>
+              <Match when={props.request.permission === "bash"}>
+                <TextBody
+                  icon="#"
+                  title={(input().description as string) ?? ""}
+                  description={("$ " + input().command) as string}
+                />
+              </Match>
+              <Match when={props.request.permission === "task"}>
+                <TextBody
+                  icon="◉"
+                  title={
+                    `${Locale.titlecase(input().subagent_type as string)} Task "` + (input().description ?? "") + `"`
+                  }
+                />
+              </Match>
+              <Match when={props.request.permission === "webfetch"}>
+                <TextBody icon="%" title={`WebFetch ` + (input().url ?? "")} />
+              </Match>
+              <Match when={props.request.permission === "websearch"}>
+                <TextBody icon="◈" title={`Exa Web Search "` + (input().query ?? "") + `"`} />
+              </Match>
+              <Match when={props.request.permission === "codesearch"}>
+                <TextBody icon="◇" title={`Exa Code Search "` + (input().query ?? "") + `"`} />
+              </Match>
+              <Match when={props.request.permission === "external_directory"}>
+                <TextBody icon="⚠" title={`Access external directory ` + normalizePath(input().path as string)} />
+              </Match>
+              <Match when={props.request.permission === "doom_loop"}>
+                <TextBody icon="⟳" title="Continue after repeated failures" />
+              </Match>
+              <Match when={true}>
+                <TextBody icon="⚙" title={`Call tool ` + props.request.permission} />
+              </Match>
+            </Switch>
+          }
           options={{ once: "Allow once", always: "Allow always", reject: "Reject" }}
           onSelect={(option) => {
             if (option === "always") {
@@ -192,8 +244,8 @@ function Prompt<const T extends Record<string, string>>(props: {
       borderColor={theme.warning}
       customBorderChars={SplitBorder.customBorderChars}
     >
-      <box gap={1} paddingLeft={2} paddingRight={3} paddingTop={1} paddingBottom={1}>
-        <box flexDirection="row" gap={1}>
+      <box gap={1} paddingLeft={1} paddingRight={3} paddingTop={1} paddingBottom={1}>
+        <box flexDirection="row" gap={1} paddingLeft={1}>
           <text fg={theme.warning}>{"△"}</text>
           <text fg={theme.text}>{props.title}</text>
         </box>

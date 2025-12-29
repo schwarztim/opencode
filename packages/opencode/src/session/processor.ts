@@ -154,7 +154,6 @@ export namespace SessionProcessor {
                       await PermissionNext.ask({
                         permission: "doom_loop",
                         patterns: [value.toolName],
-                        message: `Possible doom loop: "${value.toolName}" called ${DOOM_LOOP_THRESHOLD} times with identical arguments`,
                         sessionID: input.assistantMessage.sessionID,
                         metadata: {
                           tool: value.toolName,

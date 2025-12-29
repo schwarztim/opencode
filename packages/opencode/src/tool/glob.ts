@@ -4,8 +4,6 @@ import { Tool } from "./tool"
 import DESCRIPTION from "./glob.txt"
 import { Ripgrep } from "../file/ripgrep"
 import { Instance } from "../project/instance"
-import { Agent } from "@/agent/agent"
-import { PermissionNext } from "@/permission/next"
 
 export const GlobTool = Tool.define("glob", {
   description: DESCRIPTION,
@@ -19,20 +17,14 @@ export const GlobTool = Tool.define("glob", {
       ),
   }),
   async execute(params, ctx) {
-    const agent = await Agent.get(ctx.agent)
-    await PermissionNext.ask({
-      callID: ctx.callID,
+    await ctx.ask({
       permission: "glob",
-      message: `Glob search: ${params.pattern}`,
       patterns: [params.pattern],
       always: ["*"],
-      sessionID: ctx.sessionID,
       metadata: {
         pattern: params.pattern,
         path: params.path,
       },
-
-      ruleset: agent.permission,
     })
 
     let search = params.path ?? Instance.directory

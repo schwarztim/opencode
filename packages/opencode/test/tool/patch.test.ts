@@ -9,10 +9,11 @@ import * as fs from "fs/promises"
 const ctx = {
   sessionID: "test",
   messageID: "",
-  toolCallID: "",
+  callID: "",
   agent: "build",
   abort: AbortSignal.any([]),
   metadata: () => {},
+  ask: async () => {},
 }
 
 const patchTool = await PatchTool.init()

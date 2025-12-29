@@ -1390,7 +1390,7 @@ function ToolPart(props: { last: boolean; part: ToolPart; message: AssistantMess
     },
     get permission() {
       const permissions = sync.data.permission[props.message.sessionID] ?? []
-      const permissionIndex = permissions.findIndex((x) => x.callID === props.part.callID)
+      const permissionIndex = permissions.findIndex((x) => x.tool?.callID === props.part.callID)
       return permissions[permissionIndex]
     },
     get tool() {
@@ -1483,12 +1483,13 @@ function InlineTool(props: { icon: string; complete: any; pending: string; child
   const sync = useSync()
 
   const permission = createMemo(() => {
-    const callID = sync.data.permission[ctx.sessionID]?.at(0)?.callID
+    const callID = sync.data.permission[ctx.sessionID]?.at(0)?.tool?.callID
     if (!callID) return false
     return callID === props.part.callID
   })
 
   const fg = createMemo(() => {
+    if (permission()) return theme.warning
     if (props.complete) return theme.textMuted
     return theme.text
   })
@@ -1527,9 +1528,6 @@ function InlineTool(props: { icon: string; complete: any; pending: string; child
       <text paddingLeft={3} fg={fg()} attributes={denied() ? TextAttributes.STRIKETHROUGH : undefined}>
         <Show fallback={<>~ {props.pending}</>} when={props.complete}>
           <span style={{ bold: true }}>{props.icon}</span> {props.children}
-        </Show>
-        <Show when={permission()}>
-          ·<span style={{ fg: theme.warning }}> Permission required</span>
         </Show>
       </text>
       <Show when={error() && !denied()}>

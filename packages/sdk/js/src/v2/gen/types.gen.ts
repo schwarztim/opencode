@@ -453,15 +453,17 @@ export type EventMessagePartRemoved = {
 
 export type PermissionRequest = {
   id: string
-  callID?: string
   sessionID: string
   permission: string
   patterns: Array<string>
-  message: string
   metadata: {
     [key: string]: unknown
   }
   always: Array<string>
+  tool?: {
+    messageID: string
+    callID: string
+  }
 }
 
 export type EventPermissionNextAsked = {

@@ -206,7 +206,7 @@ export const RunCommand = cmd({
             const permission = event.properties
             if (permission.sessionID !== sessionID) continue
             const result = await select({
-              message: `Permission required to run: ${permission.message}`,
+              message: `Permission required: ${permission.permission} (${permission.patterns.join(", ")})`,
               options: [
                 { value: "once", label: "Allow once" },
                 { value: "always", label: "Always allow: " + permission.always.join(", ") },

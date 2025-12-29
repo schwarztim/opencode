@@ -8,9 +8,7 @@ import DESCRIPTION from "./read.txt"
 import { Filesystem } from "../util/filesystem"
 import { Instance } from "../project/instance"
 import { Identifier } from "../id/id"
-import { Agent } from "@/agent/agent"
 import { iife } from "@/util/iife"
-import { PermissionNext } from "@/permission/next"
 
 const DEFAULT_READ_LIMIT = 2000
 const MAX_LINE_LENGTH = 2000
@@ -28,36 +26,25 @@ export const ReadTool = Tool.define("read", {
       filepath = path.join(process.cwd(), filepath)
     }
     const title = path.relative(Instance.worktree, filepath)
-    const agent = await Agent.get(ctx.agent)
 
     if (!ctx.extra?.["bypassCwdCheck"] && !Filesystem.contains(Instance.directory, filepath)) {
       const parentDir = path.dirname(filepath)
-      await PermissionNext.ask({
-        callID: ctx.callID,
+      await ctx.ask({
         permission: "external_directory",
-        message: `Access file outside working directory: ${filepath}`,
         patterns: [parentDir],
         always: [parentDir + "/*"],
-        sessionID: ctx.sessionID,
         metadata: {
           filepath,
           parentDir,
         },
-
-        ruleset: agent.permission,
       })
     }
 
-    await PermissionNext.ask({
-      callID: ctx.callID,
+    await ctx.ask({
       permission: "read",
-      message: `Read file ${filepath}`,
       patterns: [filepath],
       always: ["*"],
-      sessionID: ctx.sessionID,
       metadata: {},
-
-      ruleset: agent.permission,
     })
 
     const block = iife(() => {

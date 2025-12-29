@@ -56,13 +56,17 @@ export namespace PermissionNext {
   export const Request = z
     .object({
       id: Identifier.schema("permission"),
-      callID: z.string().optional(),
       sessionID: Identifier.schema("session"),
       permission: z.string(),
       patterns: z.string().array(),
-      message: z.string(),
       metadata: z.record(z.string(), z.any()),
       always: z.string().array(),
+      tool: z
+        .object({
+          messageID: z.string(),
+          callID: z.string(),
+        })
+        .optional(),
     })
     .meta({
       ref: "PermissionRequest",

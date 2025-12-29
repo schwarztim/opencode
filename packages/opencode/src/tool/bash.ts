@@ -6,13 +6,13 @@ import { Log } from "../util/log"
 import { Instance } from "../project/instance"
 import { lazy } from "@/util/lazy"
 import { Language } from "web-tree-sitter"
-import { Agent } from "@/agent/agent"
+
 import { $ } from "bun"
 import { Filesystem } from "@/util/filesystem"
 import { fileURLToPath } from "url"
 import { Flag } from "@/flag/flag.ts"
 import { Shell } from "@/shell/shell"
-import { PermissionNext } from "@/permission/next"
+
 import { BashArity } from "@/permission/arity"
 
 const MAX_OUTPUT_LENGTH = Flag.OPENCODE_EXPERIMENTAL_BASH_MAX_OUTPUT_LENGTH || 30_000
@@ -80,8 +80,6 @@ export const BashTool = Tool.define("bash", async () => {
       if (!tree) {
         throw new Error("Failed to parse command")
       }
-      const agent = await Agent.get(ctx.agent)
-
       const directories = new Set<string>()
       if (!Filesystem.contains(Instance.directory, cwd)) directories.add(cwd)
       const patterns = new Set<string>()
@@ -134,29 +132,20 @@ export const BashTool = Tool.define("bash", async () => {
       }
 
       if (directories.size > 0) {
-        const dirs = Array.from(directories)
-        await PermissionNext.ask({
-          callID: ctx.callID,
+        await ctx.ask({
           permission: "external_directory",
-          message: `Requesting access to external directories: ${dirs.join(", ")}`,
           patterns: Array.from(directories),
           always: Array.from(directories).map((x) => x + "*"),
-          sessionID: ctx.sessionID,
           metadata: {},
-          ruleset: agent.permission,
         })
       }
 
       if (patterns.size > 0) {
-        await PermissionNext.ask({
-          callID: ctx.callID,
+        await ctx.ask({
           permission: "bash",
           patterns: Array.from(patterns),
           always: Array.from(always),
-          sessionID: ctx.sessionID,
-          message: params.command,
           metadata: {},
-          ruleset: agent.permission,
         })
       }
 

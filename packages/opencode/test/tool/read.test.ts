@@ -11,6 +11,7 @@ const ctx = {
   agent: "build",
   abort: AbortSignal.any([]),
   metadata: () => {},
+  ask: async () => {},
 }
 
 describe("tool.read external_directory permission", () => {

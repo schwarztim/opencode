@@ -38,6 +38,8 @@ import { NamedError } from "@opencode-ai/util/error"
 import { fn } from "@/util/fn"
 import { SessionProcessor } from "./processor"
 import { TaskTool } from "@/tool/task"
+import { Tool } from "@/tool/tool"
+import { PermissionNext } from "@/permission/next"
 import { SessionStatus } from "./status"
 import { LLM } from "./llm"
 import { iife } from "@/util/iife"
@@ -349,28 +351,35 @@ export namespace SessionPrompt {
           { args: taskArgs },
         )
         let executionError: Error | undefined
-        const result = await taskTool
-          .execute(taskArgs, {
-            agent: task.agent,
-            messageID: assistantMessage.id,
-            sessionID: sessionID,
-            abort,
-            async metadata(input) {
-              await Session.updatePart({
-                ...part,
-                type: "tool",
-                state: {
-                  ...part.state,
-                  ...input,
-                },
-              } satisfies MessageV2.ToolPart)
-            },
-          })
-          .catch((error) => {
-            executionError = error
-            log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
-            return undefined
-          })
+        const taskAgent = await Agent.get(task.agent)
+        const taskCtx: Tool.Context = {
+          agent: task.agent,
+          messageID: assistantMessage.id,
+          sessionID: sessionID,
+          abort,
+          async metadata(input) {
+            await Session.updatePart({
+              ...part,
+              type: "tool",
+              state: {
+                ...part.state,
+                ...input,
+              },
+            } satisfies MessageV2.ToolPart)
+          },
+          async ask(req) {
+            await PermissionNext.ask({
+              ...req,
+              sessionID: sessionID,
+              ruleset: taskAgent.permission,
+            })
+          },
+        }
+        const result = await taskTool.execute(taskArgs, taskCtx).catch((error) => {
+          executionError = error
+          log.error("subtask execution failed", { error, agent: task.agent, description: task.description })
+          return undefined
+        })
         await Plugin.trigger(
           "tool.execute.after",
           {
@@ -596,14 +605,14 @@ export namespace SessionPrompt {
               args,
             },
           )
-          const result = await item.execute(args, {
+          const ctx: Tool.Context = {
             sessionID: input.sessionID,
             abort: options.abortSignal!,
             messageID: input.processor.message.id,
             callID: options.toolCallId,
             extra: { model: input.model },
             agent: input.agent.name,
-            metadata: async (val) => {
+            metadata: async (val: { title?: string; metadata?: any }) => {
               const match = input.processor.partFromToolCall(options.toolCallId)
               if (match && match.state.status === "running") {
                 await Session.updatePart({
@@ -620,7 +629,16 @@ export namespace SessionPrompt {
                 })
               }
             },
-          })
+            async ask(req) {
+              await PermissionNext.ask({
+                ...req,
+                sessionID: input.sessionID,
+                tool: { messageID: input.processor.message.id, callID: options.toolCallId },
+                ruleset: input.agent.permission,
+              })
+            },
+          }
+          const result = await item.execute(args, ctx)
           await Plugin.trigger(
             "tool.execute.after",
             {
@@ -818,14 +836,16 @@ export namespace SessionPrompt {
                 await ReadTool.init()
                   .then(async (t) => {
                     const model = await Provider.getModel(info.model.providerID, info.model.modelID)
-                    const result = await t.execute(args, {
+                    const readCtx: Tool.Context = {
                       sessionID: input.sessionID,
                       abort: new AbortController().signal,
                       agent: input.agent!,
                       messageID: info.id,
                       extra: { bypassCwdCheck: true, model },
                       metadata: async () => {},
-                    })
+                      ask: async () => {},
+                    }
+                    const result = await t.execute(args, readCtx)
                     pieces.push({
                       id: Identifier.ascending("part"),
                       messageID: info.id,
@@ -877,16 +897,16 @@ export namespace SessionPrompt {
 
               if (part.mime === "application/x-directory") {
                 const args = { path: filepath }
-                const result = await ListTool.init().then((t) =>
-                  t.execute(args, {
-                    sessionID: input.sessionID,
-                    abort: new AbortController().signal,
-                    agent: input.agent!,
-                    messageID: info.id,
-                    extra: { bypassCwdCheck: true },
-                    metadata: async () => {},
-                  }),
-                )
+                const listCtx: Tool.Context = {
+                  sessionID: input.sessionID,
+                  abort: new AbortController().signal,
+                  agent: input.agent!,
+                  messageID: info.id,
+                  extra: { bypassCwdCheck: true },
+                  metadata: async () => {},
+                  ask: async () => {},
+                }
+                const result = await ListTool.init().then((t) => t.execute(args, listCtx))
                 return [
                   {
                     id: Identifier.ascending("part"),

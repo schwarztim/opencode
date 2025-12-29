@@ -4,8 +4,6 @@ import { Ripgrep } from "../file/ripgrep"
 
 import DESCRIPTION from "./grep.txt"
 import { Instance } from "../project/instance"
-import { Agent } from "@/agent/agent"
-import { PermissionNext } from "@/permission/next"
 
 const MAX_LINE_LENGTH = 2000
 
@@ -21,21 +19,15 @@ export const GrepTool = Tool.define("grep", {
       throw new Error("pattern is required")
     }
 
-    const agent = await Agent.get(ctx.agent)
-    await PermissionNext.ask({
-      callID: ctx.callID,
+    await ctx.ask({
       permission: "grep",
-      message: `Grep search: ${params.pattern}`,
       patterns: [params.pattern],
       always: ["*"],
-      sessionID: ctx.sessionID,
       metadata: {
         pattern: params.pattern,
         path: params.path,
         include: params.include,
       },
-
-      ruleset: agent.permission,
     })
 
     const searchPath = params.path || Instance.directory

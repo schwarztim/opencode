@@ -6,11 +6,9 @@ import { FileTime } from "../file/time"
 import { Bus } from "../bus"
 import { FileWatcher } from "../file/watcher"
 import { Instance } from "../project/instance"
-import { Agent } from "../agent/agent"
 import { Patch } from "../patch"
 import { Filesystem } from "../util/filesystem"
 import { createTwoFilesPatch } from "diff"
-import { PermissionNext } from "@/permission/next"
 
 const PatchParams = z.object({
   patchText: z.string().describe("The full patch text that describes all changes to be made"),
@@ -39,7 +37,6 @@ export const PatchTool = Tool.define("patch", {
     }
 
     // Validate file paths and check permissions
-    const agent = await Agent.get(ctx.agent)
     const fileChanges: Array<{
       filePath: string
       oldContent: string
@@ -55,19 +52,14 @@ export const PatchTool = Tool.define("patch", {
 
       if (!Filesystem.contains(Instance.directory, filePath)) {
         const parentDir = path.dirname(filePath)
-        await PermissionNext.ask({
-          callID: ctx.callID,
+        await ctx.ask({
           permission: "external_directory",
-          message: `Patch file outside working directory: ${filePath}`,
           patterns: [parentDir, path.join(parentDir, "*")],
           always: [parentDir + "/*"],
-          sessionID: ctx.sessionID,
           metadata: {
             filepath: filePath,
             parentDir,
           },
-
-          ruleset: agent.permission,
         })
       }
 
@@ -141,18 +133,13 @@ export const PatchTool = Tool.define("patch", {
     }
 
     // Check permissions if needed
-    await PermissionNext.ask({
-      callID: ctx.callID,
+    await ctx.ask({
       permission: "edit",
-      message: `Apply patch to ${fileChanges.length} files`,
       patterns: fileChanges.map((c) => path.relative(Instance.worktree, c.filePath)),
       always: ["*"],
-      sessionID: ctx.sessionID,
       metadata: {
         diff: totalDiff,
       },
-
-      ruleset: agent.permission,
     })
 
     // Apply the changes

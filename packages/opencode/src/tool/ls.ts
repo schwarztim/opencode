@@ -4,8 +4,6 @@ import * as path from "path"
 import DESCRIPTION from "./ls.txt"
 import { Instance } from "../project/instance"
 import { Ripgrep } from "../file/ripgrep"
-import { Agent } from "@/agent/agent"
-import { PermissionNext } from "@/permission/next"
 
 export const IGNORE_PATTERNS = [
   "node_modules/",
@@ -45,19 +43,13 @@ export const ListTool = Tool.define("list", {
   async execute(params, ctx) {
     const searchPath = path.resolve(Instance.directory, params.path || ".")
 
-    const agent = await Agent.get(ctx.agent)
-    await PermissionNext.ask({
-      callID: ctx.callID,
+    await ctx.ask({
       permission: "list",
-      message: `List directory: ${searchPath}`,
       patterns: [searchPath],
       always: ["*"],
-      sessionID: ctx.sessionID,
       metadata: {
         path: searchPath,
       },
-
-      ruleset: agent.permission,
     })
 
     const ignoreGlobs = IGNORE_PATTERNS.map((p) => `!${p}*`).concat(params.ignore?.map((p) => `!${p}`) || [])
