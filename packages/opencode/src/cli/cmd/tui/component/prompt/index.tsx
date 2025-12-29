@@ -589,6 +589,10 @@ export function Prompt(props: PromptProps) {
 
     // Capture mode before it gets reset
     const currentMode = store.mode
+    const thinking =
+      local.model.parsed().reasoning && local.effort.current() !== "default"
+        ? { effort: local.effort.current() }
+        : undefined
 
     if (store.mode === "shell") {
       sdk.client.session.shell({
@@ -617,7 +621,7 @@ export function Prompt(props: PromptProps) {
         agent: local.agent.current().name,
         model: `${selectedModel.providerID}/${selectedModel.modelID}`,
         messageID,
-        thinking: local.effort.current() !== "default" ? { effort: local.effort.current() } : undefined,
+        thinking,
       })
     } else {
       sdk.client.session.prompt({
@@ -626,7 +630,7 @@ export function Prompt(props: PromptProps) {
         messageID,
         agent: local.agent.current().name,
         model: selectedModel,
-        thinking: local.effort.current() !== "default" ? { effort: local.effort.current() } : undefined,
+        thinking,
         parts: [
           {
             id: Identifier.ascending("part"),
@@ -874,6 +878,7 @@ export function Prompt(props: PromptProps) {
                 }
                 if (keybind.match("effort_cycle", e)) {
                   e.preventDefault()
+                  if (!local.model.parsed().reasoning) return
                   local.effort.cycle()
                   return
                 }
@@ -992,7 +997,7 @@ export function Prompt(props: PromptProps) {
                     {local.model.parsed().model}
                   </text>
                   <text fg={theme.textMuted}>{local.model.parsed().provider}</text>
-                  <Show when={local.effort.current() !== "default"}>
+                  <Show when={local.effort.current() !== "default" && local.model.parsed().reasoning}>
                     <text fg={theme.textMuted}>·</text>
                     <text>
                       <span style={{ fg: theme.warning, bold: true }}>{local.effort.current()}</span>
