@@ -144,3 +144,23 @@ test("discovers global skills from ~/.claude/skills/ directory", async () => {
     },
   })
 })
+
+test("returns empty array when no skills exist", async () => {
+  await using tmp = await tmpdir({ git: true })
+
+  // Override global home to a directory without any skills
+  const originalHome = process.env.OPENCODE_TEST_HOME
+  process.env.OPENCODE_TEST_HOME = tmp.path
+
+  try {
+    await Instance.provide({
+      directory: tmp.path,
+      fn: async () => {
+        const skills = await Skill.all()
+        expect(skills).toEqual([])
+      },
+    })
+  } finally {
+    process.env.OPENCODE_TEST_HOME = originalHome
+  }
+})
