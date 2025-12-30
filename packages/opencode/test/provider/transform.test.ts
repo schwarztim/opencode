@@ -680,7 +680,7 @@ describe("ProviderTransform.variants", () => {
   describe("@ai-sdk/azure", () => {
     test("o1-mini returns empty object", () => {
       const model = createMockModel({
-        id: "azure/o1-mini",
+        id: "o1-mini",
         providerID: "azure",
         api: {
           id: "o1-mini",
@@ -729,7 +729,7 @@ describe("ProviderTransform.variants", () => {
   describe("@ai-sdk/openai", () => {
     test("gpt-5-pro returns empty object", () => {
       const model = createMockModel({
-        id: "openai/gpt-5-pro",
+        id: "gpt-5-pro",
         providerID: "openai",
         api: {
           id: "gpt-5-pro",
