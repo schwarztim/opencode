@@ -125,12 +125,21 @@ export namespace Config {
       result.permission = mergeDeep(result.permission ?? {}, JSON.parse(Flag.OPENCODE_PERMISSION))
     }
 
-    if (!result.username) result.username = os.userInfo().username
-
-    // Handle migration from autoshare to share field
-    if (result.autoshare === true && !result.share) {
-      result.share = "auto"
+    // Backwards compatibility: legacy top-level `tools` config
+    if (result.tools) {
+      const perms: Record<string, Config.PermissionAction> = {}
+      for (const [tool, enabled] of Object.entries(result.tools)) {
+        const action: Config.PermissionAction = enabled ? "allow" : "deny"
+        if (tool === "write" || tool === "edit" || tool === "patch" || tool === "multiedit") {
+          perms.edit = action
+          continue
+        }
+        perms[tool] = action
+      }
+      result.permission = mergeDeep(perms, result.permission ?? {})
     }
+
+    if (!result.username) result.username = os.userInfo().username
 
     // Handle migration from autoshare to share field
     if (result.autoshare === true && !result.share) {

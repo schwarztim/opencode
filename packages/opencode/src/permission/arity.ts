@@ -5,7 +5,8 @@ export namespace BashArity {
       const arity = ARITY[prefix]
       if (arity !== undefined) return tokens.slice(0, arity)
     }
-    return tokens
+    if (tokens.length === 0) return []
+    return tokens.slice(0, 1)
   }
 
   /* Generated with following prompt:

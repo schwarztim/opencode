@@ -130,24 +130,24 @@ export function PermissionPrompt(props: { request: PermissionRequest }) {
               <Match when={true}>
                 <box paddingLeft={1} gap={1}>
                   <text fg={theme.textMuted}>This will allow the following patterns until OpenCode is restarted</text>
-                  <For each={props.request.always}>
-                    {(pattern) => (
-                      <text fg={theme.text}>
-                        {"- "}
-                        {pattern}
-                      </text>
-                    )}
-                  </For>
+                  <box>
+                    <For each={props.request.always}>
+                      {(pattern) => (
+                        <text fg={theme.text}>
+                          {"- "}
+                          {pattern}
+                        </text>
+                      )}
+                    </For>
+                  </box>
                 </box>
               </Match>
             </Switch>
           }
           options={{ confirm: "Confirm", cancel: "Cancel" }}
           onSelect={(option) => {
-            if (option === "cancel") {
-              setStore("always", false)
-              return
-            }
+            setStore("always", false)
+            if (option === "cancel") return
             sdk.client.permission.reply({
               reply: "always",
               requestID: props.request.id,

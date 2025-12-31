@@ -78,8 +78,6 @@
     "url": "https://github.com/sst/opencode"
   },
   "license": "MIT",
-  "randomField": "hello from claude",
-  "anotherRandomField": "xkcd-927-compliance-level",
   "prettier": {
     "semi": false,
     "printWidth": 120

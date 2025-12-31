@@ -181,7 +181,6 @@ export namespace PermissionNext {
         return
       }
       if (input.reply === "always") {
-        const projectID = Instance.project.id
         for (const pattern of existing.info.always) {
           s.approved.push({
             permission: existing.info.permission,
@@ -189,10 +188,28 @@ export namespace PermissionNext {
             action: "allow",
           })
         }
+
+        existing.resolve()
+
+        const sessionID = existing.info.sessionID
+        for (const [id, pending] of Object.entries(s.pending)) {
+          if (pending.info.sessionID !== sessionID) continue
+          const ok = pending.info.patterns.every(
+            (pattern) => evaluate(pending.info.permission, pattern, s.approved) === "allow",
+          )
+          if (!ok) continue
+          delete s.pending[id]
+          Bus.publish(Event.Replied, {
+            sessionID: pending.info.sessionID,
+            requestID: pending.info.id,
+            reply: "always",
+          })
+          pending.resolve()
+        }
+
         // TODO: we don't save the permission ruleset to disk yet until there's
         // UI to manage it
-        // await Storage.write(["permission", projectID], s.approved)
-        existing.resolve()
+        // await Storage.write(["permission", Instance.project.id], s.approved)
         return
       }
     },
