@@ -19,6 +19,7 @@ export interface SessionReviewProps {
   split?: boolean
   diffStyle?: SessionReviewDiffStyle
   onDiffStyleChange?: (diffStyle: SessionReviewDiffStyle) => void
+  onDiffRendered?: () => void
   open?: string[]
   onOpenChange?: (open: string[]) => void
   scrollRef?: (el: HTMLDivElement) => void
@@ -121,6 +122,7 @@ export const SessionReview = (props: SessionReviewProps) => {
                     component={diffComponent}
                     preloadedDiff={diff.preloaded}
                     diffStyle={diffStyle()}
+                    onRendered={props.onDiffRendered}
                     before={{
                       name: diff.file!,
                       contents: diff.before!,

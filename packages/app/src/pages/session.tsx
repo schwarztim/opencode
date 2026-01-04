@@ -1,9 +1,9 @@
-import { For, onCleanup, Show, Match, Switch, createMemo, createEffect, on } from "solid-js"
+import { For, onCleanup, Show, Match, Switch, createMemo, createEffect, on, createSignal } from "solid-js"
 import { createMediaQuery } from "@solid-primitives/media"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import { Dynamic } from "solid-js/web"
 import { useLocal } from "@/context/local"
-import { selectionFromLines, useFile, type SelectedLineRange } from "@/context/file"
+import { selectionFromLines, useFile, type FileSelection, type SelectedLineRange } from "@/context/file"
 import { createStore } from "solid-js/store"
 import { PromptInput } from "@/components/prompt-input"
 import { SessionContextUsage } from "@/components/session-context-usage"
@@ -75,18 +75,12 @@ function SessionReviewTab(props: SessionReviewTabProps) {
   let frame: number | undefined
   let pending: { x: number; y: number } | undefined
 
-  const restoreScroll = (retries = 0) => {
+  const restoreScroll = () => {
     const el = scroll
     if (!el) return
 
     const s = props.view().scroll("review")
     if (!s) return
-
-    // Wait for content to be scrollable - content may not have rendered yet
-    if (el.scrollHeight <= el.clientHeight && retries < 10) {
-      requestAnimationFrame(() => restoreScroll(retries + 1))
-      return
-    }
 
     if (el.scrollTop !== s.y) el.scrollTop = s.y
     if (el.scrollLeft !== s.x) el.scrollLeft = s.x
@@ -132,6 +126,7 @@ function SessionReviewTab(props: SessionReviewTabProps) {
         restoreScroll()
       }}
       onScroll={handleScroll}
+      onDiffRendered={() => requestAnimationFrame(restoreScroll)}
       open={props.view().review.open()}
       onOpenChange={props.view().review.setOpen}
       classes={{
@@ -343,6 +338,10 @@ export default function Page() {
     setStore("expanded", id, status().type !== "idle")
   })
 
+  const addSelectionToContext = (path: string, selection: FileSelection) => {
+    prompt.context.add({ type: "file", path, selection })
+  }
+
   command.register(() => [
     {
       id: "session.new",
@@ -361,6 +360,37 @@ export default function Page() {
       keybind: "mod+p",
       slash: "open",
       onSelect: () => dialog.show(() => <DialogSelectFile />),
+    },
+    {
+      id: "context.addSelection",
+      title: "Add selection to context",
+      description: "Add selected lines from the current file",
+      category: "Context",
+      keybind: "mod+shift+l",
+      disabled: (() => {
+        const active = tabs().active()
+        if (!active) return true
+        const path = file.pathFromTab(active)
+        if (!path) return true
+        return file.selectedLines(path) == null
+      })(),
+      onSelect: () => {
+        const active = tabs().active()
+        if (!active) return
+        const path = file.pathFromTab(active)
+        if (!path) return
+
+        const range = file.selectedLines(path)
+        if (!range) {
+          showToast({
+            title: "No line selection",
+            description: "Select a line range in a file tab first.",
+          })
+          return
+        }
+
+        addSelectionToContext(path, selectionFromLines(range))
+      },
     },
     {
       id: "terminal.toggle",
@@ -1053,6 +1083,9 @@ export default function Page() {
                     let scroll: HTMLDivElement | undefined
                     let scrollFrame: number | undefined
                     let pending: { x: number; y: number } | undefined
+                    let codeScroll: HTMLElement[] = []
+
+                    const [selectionPopoverTop, setSelectionPopoverTop] = createSignal<number | undefined>()
 
                     const path = createMemo(() => file.pathFromTab(tab))
                     const state = createMemo(() => {
@@ -1108,28 +1141,78 @@ export default function Page() {
                       return `L${sel.startLine}-${sel.endLine}`
                     })
 
-                    const restoreScroll = (retries = 0) => {
+                    const updateSelectionPopover = () => {
                       const el = scroll
-                      if (!el) return
-
-                      const s = view()?.scroll(tab)
-                      if (!s) return
-
-                      // Wait for content to be scrollable - content may not have rendered yet
-                      if (el.scrollHeight <= el.clientHeight && retries < 10) {
-                        requestAnimationFrame(() => restoreScroll(retries + 1))
+                      if (!el) {
+                        setSelectionPopoverTop(undefined)
                         return
                       }
 
-                      if (el.scrollTop !== s.y) el.scrollTop = s.y
-                      if (el.scrollLeft !== s.x) el.scrollLeft = s.x
+                      const sel = selection()
+                      if (!sel) {
+                        setSelectionPopoverTop(undefined)
+                        return
+                      }
+
+                      const host = el.querySelector("diffs-container")
+                      if (!(host instanceof HTMLElement)) {
+                        setSelectionPopoverTop(undefined)
+                        return
+                      }
+
+                      const root = host.shadowRoot
+                      if (!root) {
+                        setSelectionPopoverTop(undefined)
+                        return
+                      }
+
+                      const marker =
+                        (root.querySelector(
+                          '[data-selected-line="last"], [data-selected-line="single"]',
+                        ) as HTMLElement | null) ?? (root.querySelector("[data-selected-line]") as HTMLElement | null)
+
+                      if (!marker) {
+                        setSelectionPopoverTop(undefined)
+                        return
+                      }
+
+                      const containerRect = el.getBoundingClientRect()
+                      const markerRect = marker.getBoundingClientRect()
+                      setSelectionPopoverTop(markerRect.bottom - containerRect.top + el.scrollTop + 8)
                     }
 
-                    const handleScroll = (event: Event & { currentTarget: HTMLDivElement }) => {
-                      pending = {
-                        x: event.currentTarget.scrollLeft,
-                        y: event.currentTarget.scrollTop,
-                      }
+                    createEffect(
+                      on(
+                        selection,
+                        (sel) => {
+                          if (!sel) {
+                            setSelectionPopoverTop(undefined)
+                            return
+                          }
+
+                          requestAnimationFrame(updateSelectionPopover)
+                        },
+                        { defer: true },
+                      ),
+                    )
+
+                    const getCodeScroll = () => {
+                      const el = scroll
+                      if (!el) return []
+
+                      const host = el.querySelector("diffs-container")
+                      if (!(host instanceof HTMLElement)) return []
+
+                      const root = host.shadowRoot
+                      if (!root) return []
+
+                      return Array.from(root.querySelectorAll("[data-code]")).filter(
+                        (node): node is HTMLElement => node instanceof HTMLElement && node.clientWidth > 0,
+                      )
+                    }
+
+                    const queueScrollUpdate = (next: { x: number; y: number }) => {
+                      pending = next
                       if (scrollFrame !== undefined) return
 
                       scrollFrame = requestAnimationFrame(() => {
@@ -1140,6 +1223,65 @@ export default function Page() {
                         if (!next) return
 
                         view().setScroll(tab, next)
+                      })
+                    }
+
+                    const handleCodeScroll = (event: Event) => {
+                      const el = scroll
+                      if (!el) return
+
+                      const target = event.currentTarget
+                      if (!(target instanceof HTMLElement)) return
+
+                      queueScrollUpdate({
+                        x: target.scrollLeft,
+                        y: el.scrollTop,
+                      })
+                    }
+
+                    const syncCodeScroll = () => {
+                      const next = getCodeScroll()
+                      if (next.length === codeScroll.length && next.every((el, i) => el === codeScroll[i])) return
+
+                      for (const item of codeScroll) {
+                        item.removeEventListener("scroll", handleCodeScroll)
+                      }
+
+                      codeScroll = next
+
+                      for (const item of codeScroll) {
+                        item.addEventListener("scroll", handleCodeScroll)
+                      }
+                    }
+
+                    const restoreScroll = () => {
+                      const el = scroll
+                      if (!el) return
+
+                      const s = view()?.scroll(tab)
+                      if (!s) return
+
+                      syncCodeScroll()
+
+                      if (codeScroll.length > 0) {
+                        for (const item of codeScroll) {
+                          if (item.scrollLeft !== s.x) item.scrollLeft = s.x
+                        }
+                      }
+
+                      if (el.scrollTop !== s.y) el.scrollTop = s.y
+
+                      if (codeScroll.length > 0) return
+
+                      if (el.scrollLeft !== s.x) el.scrollLeft = s.x
+                    }
+
+                    const handleScroll = (event: Event & { currentTarget: HTMLDivElement }) => {
+                      if (codeScroll.length === 0) syncCodeScroll()
+
+                      queueScrollUpdate({
+                        x: codeScroll[0]?.scrollLeft ?? event.currentTarget.scrollLeft,
+                        y: event.currentTarget.scrollTop,
                       })
                     }
 
@@ -1177,6 +1319,10 @@ export default function Page() {
                     )
 
                     onCleanup(() => {
+                      for (const item of codeScroll) {
+                        item.removeEventListener("scroll", handleCodeScroll)
+                      }
+
                       if (scrollFrame === undefined) return
                       cancelAnimationFrame(scrollFrame)
                     })
@@ -1184,35 +1330,47 @@ export default function Page() {
                     return (
                       <Tabs.Content
                         value={tab}
-                        class="mt-3"
+                        class="mt-3 relative"
                         ref={(el: HTMLDivElement) => {
                           scroll = el
                           restoreScroll()
+                          updateSelectionPopover()
                         }}
                         onScroll={handleScroll}
                       >
-                        <Show when={selection()}>
+                        <Show when={selectionPopoverTop() !== undefined && selection()}>
                           {(sel) => (
-                            <div class="hidden sticky top-0 z-10 px-6 py-2 _flex justify-end bg-background-base border-b border-border-weak-base">
-                              <button
-                                type="button"
-                                class="flex items-center gap-2 px-2 py-1 rounded-md bg-surface-base border border-border-base text-12-regular text-text-strong hover:bg-surface-raised-base-hover"
-                                onClick={() => {
-                                  const p = path()
-                                  if (!p) return
-                                  prompt.context.add({ type: "file", path: p, selection: sel() })
-                                }}
+                            <div class="absolute z-20 right-6" style={{ top: `${selectionPopoverTop() ?? 0}px` }}>
+                              <TooltipKeybind
+                                placement="bottom"
+                                title="Add selection to context"
+                                keybind={command.keybind("context.addSelection")}
                               >
-                                <Icon name="plus-small" size="small" />
-                                <span>Add {selectionLabel()} to context</span>
-                              </button>
+                                <button
+                                  type="button"
+                                  class="flex items-center gap-2 px-2 py-1 rounded-md bg-surface-raised-stronger-non-alpha border border-border-base text-12-regular text-text-strong hover:bg-surface-raised-base-hover"
+                                  onClick={() => {
+                                    const p = path()
+                                    if (!p) return
+                                    addSelectionToContext(p, sel())
+                                  }}
+                                >
+                                  <Icon name="plus-small" size="small" />
+                                  <span>Add {selectionLabel()} to context</span>
+                                </button>
+                              </TooltipKeybind>
                             </div>
                           )}
                         </Show>
                         <Switch>
                           <Match when={state()?.loaded && isImage()}>
                             <div class="px-6 py-4 pb-40">
-                              <img src={imageDataUrl()} alt={path()} class="max-w-full" />
+                              <img
+                                src={imageDataUrl()}
+                                alt={path()}
+                                class="max-w-full"
+                                onLoad={() => requestAnimationFrame(restoreScroll)}
+                              />
                             </div>
                           </Match>
                           <Match when={state()?.loaded && isSvg()}>
@@ -1251,6 +1409,10 @@ export default function Page() {
                               }}
                               enableLineSelection
                               selectedLines={selectedLines()}
+                              onRendered={() => {
+                                requestAnimationFrame(restoreScroll)
+                                requestAnimationFrame(updateSelectionPopover)
+                              }}
                               onLineSelected={(range: SelectedLineRange | null) => {
                                 const p = path()
                                 if (!p) return
