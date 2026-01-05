@@ -165,6 +165,25 @@ export function SessionHeader() {
             <SessionMcpIndicator />
           </div>
           <div class="flex items-center gap-1">
+            <Tooltip class="hidden md:block shrink-0" value="Toggle file tree">
+              <Button
+                variant="ghost"
+                class="group/file-tree-toggle size-6 p-0"
+                onClick={() => {
+                  if (!layout.review.opened()) layout.review.open()
+                  layout.fileTree.toggle()
+                }}
+              >
+                <Icon
+                  name="bullet-list"
+                  size="small"
+                  classList={{
+                    "text-icon-strong": layout.fileTree.opened(),
+                    "text-icon-weak": !layout.fileTree.opened(),
+                  }}
+                />
+              </Button>
+            </Tooltip>
             <Show when={currentSession()?.summary?.files}>
               <TooltipKeybind
                 class="hidden md:block shrink-0"

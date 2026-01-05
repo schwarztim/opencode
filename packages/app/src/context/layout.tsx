@@ -64,6 +64,10 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
           opened: true,
           diffStyle: "split" as ReviewDiffStyle,
         },
+        fileTree: {
+          opened: false,
+          width: 260,
+        },
         session: {
           width: 600,
         },
@@ -228,6 +232,38 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         },
         toggle() {
           setStore("review", "opened", (x) => !x)
+        },
+      },
+      fileTree: {
+        opened: createMemo(() => store.fileTree?.opened ?? false),
+        width: createMemo(() => store.fileTree?.width ?? 260),
+        open() {
+          if (!store.fileTree) {
+            setStore("fileTree", { opened: true, width: 260 })
+            return
+          }
+          setStore("fileTree", "opened", true)
+        },
+        close() {
+          if (!store.fileTree) {
+            setStore("fileTree", { opened: false, width: 260 })
+            return
+          }
+          setStore("fileTree", "opened", false)
+        },
+        toggle() {
+          if (!store.fileTree) {
+            setStore("fileTree", { opened: true, width: 260 })
+            return
+          }
+          setStore("fileTree", "opened", (x) => !x)
+        },
+        resize(width: number) {
+          if (!store.fileTree) {
+            setStore("fileTree", { opened: true, width })
+            return
+          }
+          setStore("fileTree", "width", width)
         },
       },
       session: {

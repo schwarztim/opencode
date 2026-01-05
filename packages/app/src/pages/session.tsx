@@ -28,6 +28,7 @@ import { Terminal } from "@/components/terminal"
 import { checksum, base64Encode, base64Decode } from "@opencode-ai/util/encode"
 import { useDialog } from "@opencode-ai/ui/context/dialog"
 import { DialogSelectFile } from "@/components/dialog-select-file"
+import FileTree from "@/components/file-tree"
 import { DialogSelectModel } from "@/components/dialog-select-model"
 import { DialogSelectMcp } from "@/components/dialog-select-mcp"
 import { useCommand } from "@/context/command"
@@ -640,7 +641,9 @@ export default function Page() {
   const mobileReview = createMemo(() => !isDesktop() && diffs().length > 0 && store.mobileTab === "review")
 
   const showTabs = createMemo(
-    () => layout.review.opened() && (diffs().length > 0 || tabs().all().length > 0 || contextOpen()),
+    () =>
+      layout.review.opened() &&
+      (diffs().length > 0 || tabs().all().length > 0 || contextOpen() || layout.fileTree.opened()),
   )
 
   const activeTab = createMemo(() => {
@@ -955,268 +958,317 @@ export default function Page() {
 
         {/* Desktop tabs panel (Review + Context + Files) - hidden on mobile */}
         <Show when={isDesktop() && showTabs()}>
-          <div class="relative flex-1 min-w-0 h-full border-l border-border-weak-base">
-            <DragDropProvider
-              onDragStart={handleDragStart}
-              onDragEnd={handleDragEnd}
-              onDragOver={handleDragOver}
-              collisionDetector={closestCenter}
-            >
-              <DragDropSensors />
-              <ConstrainDragYAxis />
-              <Tabs value={activeTab()} onChange={openTab}>
-                <div class="sticky top-0 shrink-0 flex">
-                  <Tabs.List>
-                    <Show when={reviewTab()}>
-                      <Tabs.Trigger value="review">
-                        <div class="flex items-center gap-3">
-                          <Show when={diffs()}>
-                            <DiffChanges changes={diffs()} variant="bars" />
-                          </Show>
-                          <div class="flex items-center gap-1.5">
-                            <div>Review</div>
-                            <Show when={info()?.summary?.files}>
-                              <div class="text-12-medium text-text-strong h-4 px-2 flex flex-col items-center justify-center rounded-full bg-surface-base">
-                                {info()?.summary?.files ?? 0}
-                              </div>
-                            </Show>
-                          </div>
-                        </div>
-                      </Tabs.Trigger>
-                    </Show>
-                    <Show when={contextOpen()}>
-                      <Tabs.Trigger
-                        value="context"
-                        closeButton={
-                          <Tooltip value="Close tab" placement="bottom">
-                            <IconButton icon="close" variant="ghost" onClick={() => tabs().close("context")} />
-                          </Tooltip>
-                        }
-                        hideCloseButton
-                      >
-                        <div class="flex items-center gap-2">
-                          <SessionContextUsage variant="indicator" />
-                          <div>Context</div>
-                        </div>
-                      </Tabs.Trigger>
-                    </Show>
-                    <SortableProvider ids={openedTabs()}>
-                      <For each={openedTabs()}>{(tab) => <SortableTab tab={tab} onTabClose={tabs().close} />}</For>
-                    </SortableProvider>
-                    <div class="bg-background-base h-full flex items-center justify-center border-b border-border-weak-base px-3">
-                      <TooltipKeybind
-                        title="Open file"
-                        keybind={command.keybind("file.open")}
-                        class="flex items-center"
-                      >
-                        <IconButton
-                          icon="plus-small"
-                          variant="ghost"
-                          iconSize="large"
-                          onClick={() => dialog.show(() => <DialogSelectFile />)}
-                        />
-                      </TooltipKeybind>
-                    </div>
-                  </Tabs.List>
+          <div class="relative flex-1 min-w-0 h-full border-l border-border-weak-base flex">
+            <Show when={layout.fileTree.opened()}>
+              <div class="relative shrink-0 h-full" style={{ width: `${layout.fileTree.width()}px` }}>
+                <div class="h-full bg-background-base border-r border-border-weak-base flex flex-col">
+                  <div class="hidden h-12 shrink-0 flex items-center px-3 border-b border-border-weak-base text-12-medium text-text-weak">
+                    Files
+                  </div>
+                  <div class="flex-1 min-h-0 overflow-y-auto no-scrollbar p-2">
+                    <FileTree path="" onFileClick={(node) => openTab(file.tab(node.path))} />
+                  </div>
                 </div>
-                <Show when={reviewTab()}>
-                  <Tabs.Content value="review" class="flex flex-col h-full overflow-hidden contain-strict">
-                    <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
-                      <SessionReviewTab
-                        diffs={diffs}
-                        view={view}
-                        diffStyle={layout.review.diffStyle()}
-                        onDiffStyleChange={layout.review.setDiffStyle}
-                      />
-                    </div>
-                  </Tabs.Content>
-                </Show>
-                <Show when={contextOpen()}>
-                  <Tabs.Content value="context" class="flex flex-col h-full overflow-hidden contain-strict">
-                    <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
-                      <SessionContextTab
-                        messages={messages}
-                        visibleUserMessages={visibleUserMessages}
-                        view={view}
-                        info={info}
-                      />
-                    </div>
-                  </Tabs.Content>
-                </Show>
-                <For each={openedTabs()}>
-                  {(tab) => {
-                    let scroll: HTMLDivElement | undefined
-                    let scrollFrame: number | undefined
-                    let pending: { x: number; y: number } | undefined
+                <ResizeHandle
+                  direction="horizontal"
+                  size={layout.fileTree.width()}
+                  min={200}
+                  max={480}
+                  collapseThreshold={160}
+                  onResize={layout.fileTree.resize}
+                  onCollapse={layout.fileTree.close}
+                />
+              </div>
+            </Show>
+            <div class="flex-1 min-w-0 h-full">
+              <DragDropProvider
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                collisionDetector={closestCenter}
+              >
+                <DragDropSensors />
+                <ConstrainDragYAxis />
+                <Tabs value={activeTab()} onChange={openTab}>
+                  <div class="sticky top-0 shrink-0 flex">
+                    <Tabs.List>
+                      <Show when={reviewTab()}>
+                        <Tabs.Trigger value="review">
+                          <div class="flex items-center gap-3">
+                            <Show when={diffs()}>
+                              <DiffChanges changes={diffs()} variant="bars" />
+                            </Show>
+                            <div class="flex items-center gap-1.5">
+                              <div>Review</div>
+                              <Show when={info()?.summary?.files}>
+                                <div class="text-12-medium text-text-strong h-4 px-2 flex flex-col items-center justify-center rounded-full bg-surface-base">
+                                  {info()?.summary?.files ?? 0}
+                                </div>
+                              </Show>
+                            </div>
+                          </div>
+                        </Tabs.Trigger>
+                      </Show>
+                      <Show when={contextOpen()}>
+                        <Tabs.Trigger
+                          value="context"
+                          closeButton={
+                            <Tooltip value="Close tab" placement="bottom">
+                              <IconButton icon="close" variant="ghost" onClick={() => tabs().close("context")} />
+                            </Tooltip>
+                          }
+                          hideCloseButton
+                        >
+                          <div class="flex items-center gap-2">
+                            <SessionContextUsage variant="indicator" />
+                            <div>Context</div>
+                          </div>
+                        </Tabs.Trigger>
+                      </Show>
+                      <SortableProvider ids={openedTabs()}>
+                        <For each={openedTabs()}>{(tab) => <SortableTab tab={tab} onTabClose={tabs().close} />}</For>
+                      </SortableProvider>
+                      <div class="bg-background-base h-full flex items-center justify-center border-b border-border-weak-base px-3">
+                        <TooltipKeybind
+                          title="Open file"
+                          keybind={command.keybind("file.open")}
+                          class="flex items-center"
+                        >
+                          <IconButton
+                            icon="plus-small"
+                            variant="ghost"
+                            iconSize="large"
+                            onClick={() => dialog.show(() => <DialogSelectFile />)}
+                          />
+                        </TooltipKeybind>
+                      </div>
+                    </Tabs.List>
+                  </div>
+                  <Show when={reviewTab()}>
+                    <Tabs.Content value="review" class="flex flex-col h-full overflow-hidden contain-strict">
+                      <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
+                        <SessionReviewTab
+                          diffs={diffs}
+                          view={view}
+                          diffStyle={layout.review.diffStyle()}
+                          onDiffStyleChange={layout.review.setDiffStyle}
+                        />
+                      </div>
+                    </Tabs.Content>
+                  </Show>
+                  <Show when={contextOpen()}>
+                    <Tabs.Content value="context" class="flex flex-col h-full overflow-hidden contain-strict">
+                      <div class="relative pt-2 flex-1 min-h-0 overflow-hidden">
+                        <SessionContextTab
+                          messages={messages}
+                          visibleUserMessages={visibleUserMessages}
+                          view={view}
+                          info={info}
+                        />
+                      </div>
+                    </Tabs.Content>
+                  </Show>
+                  <For each={openedTabs()}>
+                    {(tab) => {
+                      let scroll: HTMLDivElement | undefined
+                      let scrollFrame: number | undefined
+                      let pending: { x: number; y: number } | undefined
 
-                    const path = createMemo(() => file.pathFromTab(tab))
-                    const state = createMemo(() => {
-                      const p = path()
-                      if (!p) return
-                      return file.get(p)
-                    })
-                    const contents = createMemo(() => state()?.content?.content ?? "")
-                    const cacheKey = createMemo(() => checksum(contents()))
-                    const isImage = createMemo(() => {
-                      const c = state()?.content
-                      return (
-                        c?.encoding === "base64" && c?.mimeType?.startsWith("image/") && c?.mimeType !== "image/svg+xml"
-                      )
-                    })
-                    const isSvg = createMemo(() => {
-                      const c = state()?.content
-                      return c?.mimeType === "image/svg+xml"
-                    })
-                    const svgContent = createMemo(() => {
-                      if (!isSvg()) return
-                      const c = state()?.content
-                      if (!c) return
-                      if (c.encoding === "base64") return base64Decode(c.content)
-                      return c.content
-                    })
-                    const svgPreviewUrl = createMemo(() => {
-                      if (!isSvg()) return
-                      const c = state()?.content
-                      if (!c) return
-                      if (c.encoding === "base64") return `data:image/svg+xml;base64,${c.content}`
-                      return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(c.content)}`
-                    })
-                    const imageDataUrl = createMemo(() => {
-                      if (!isImage()) return
-                      const c = state()?.content
-                      return `data:${c?.mimeType};base64,${c?.content}`
-                    })
-                    const selectedLines = createMemo(() => {
-                      const p = path()
-                      if (!p) return null
-                      return file.selectedLines(p) ?? null
-                    })
-                    const selection = createMemo(() => {
-                      const range = selectedLines()
-                      if (!range) return
-                      return selectionFromLines(range)
-                    })
-                    const selectionLabel = createMemo(() => {
-                      const sel = selection()
-                      if (!sel) return
-                      if (sel.startLine === sel.endLine) return `L${sel.startLine}`
-                      return `L${sel.startLine}-${sel.endLine}`
-                    })
-
-                    const restoreScroll = (retries = 0) => {
-                      const el = scroll
-                      if (!el) return
-
-                      const s = view()?.scroll(tab)
-                      if (!s) return
-
-                      // Wait for content to be scrollable - content may not have rendered yet
-                      if (el.scrollHeight <= el.clientHeight && retries < 10) {
-                        requestAnimationFrame(() => restoreScroll(retries + 1))
-                        return
-                      }
-
-                      if (el.scrollTop !== s.y) el.scrollTop = s.y
-                      if (el.scrollLeft !== s.x) el.scrollLeft = s.x
-                    }
-
-                    const handleScroll = (event: Event & { currentTarget: HTMLDivElement }) => {
-                      pending = {
-                        x: event.currentTarget.scrollLeft,
-                        y: event.currentTarget.scrollTop,
-                      }
-                      if (scrollFrame !== undefined) return
-
-                      scrollFrame = requestAnimationFrame(() => {
-                        scrollFrame = undefined
-
-                        const next = pending
-                        pending = undefined
-                        if (!next) return
-
-                        view().setScroll(tab, next)
+                      const path = createMemo(() => file.pathFromTab(tab))
+                      const state = createMemo(() => {
+                        const p = path()
+                        if (!p) return
+                        return file.get(p)
                       })
-                    }
+                      const contents = createMemo(() => state()?.content?.content ?? "")
+                      const cacheKey = createMemo(() => checksum(contents()))
+                      const isImage = createMemo(() => {
+                        const c = state()?.content
+                        return (
+                          c?.encoding === "base64" &&
+                          c?.mimeType?.startsWith("image/") &&
+                          c?.mimeType !== "image/svg+xml"
+                        )
+                      })
+                      const isSvg = createMemo(() => {
+                        const c = state()?.content
+                        return c?.mimeType === "image/svg+xml"
+                      })
+                      const svgContent = createMemo(() => {
+                        if (!isSvg()) return
+                        const c = state()?.content
+                        if (!c) return
+                        if (c.encoding === "base64") return base64Decode(c.content)
+                        return c.content
+                      })
+                      const svgPreviewUrl = createMemo(() => {
+                        if (!isSvg()) return
+                        const c = state()?.content
+                        if (!c) return
+                        if (c.encoding === "base64") return `data:image/svg+xml;base64,${c.content}`
+                        return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(c.content)}`
+                      })
+                      const imageDataUrl = createMemo(() => {
+                        if (!isImage()) return
+                        const c = state()?.content
+                        return `data:${c?.mimeType};base64,${c?.content}`
+                      })
+                      const selectedLines = createMemo(() => {
+                        const p = path()
+                        if (!p) return null
+                        return file.selectedLines(p) ?? null
+                      })
+                      const selection = createMemo(() => {
+                        const range = selectedLines()
+                        if (!range) return
+                        return selectionFromLines(range)
+                      })
+                      const selectionLabel = createMemo(() => {
+                        const sel = selection()
+                        if (!sel) return
+                        if (sel.startLine === sel.endLine) return `L${sel.startLine}`
+                        return `L${sel.startLine}-${sel.endLine}`
+                      })
 
-                    createEffect(
-                      on(
-                        () => state()?.loaded,
-                        (loaded) => {
-                          if (!loaded) return
-                          requestAnimationFrame(restoreScroll)
-                        },
-                        { defer: true },
-                      ),
-                    )
+                      const restoreScroll = (retries = 0) => {
+                        const el = scroll
+                        if (!el) return
 
-                    createEffect(
-                      on(
-                        () => file.ready(),
-                        (ready) => {
-                          if (!ready) return
-                          requestAnimationFrame(restoreScroll)
-                        },
-                        { defer: true },
-                      ),
-                    )
+                        const s = view()?.scroll(tab)
+                        if (!s) return
 
-                    createEffect(
-                      on(
-                        () => tabs().active() === tab,
-                        (active) => {
-                          if (!active) return
-                          if (!state()?.loaded) return
-                          requestAnimationFrame(restoreScroll)
-                        },
-                      ),
-                    )
+                        // Wait for content to be scrollable - content may not have rendered yet
+                        if (el.scrollHeight <= el.clientHeight && retries < 10) {
+                          requestAnimationFrame(() => restoreScroll(retries + 1))
+                          return
+                        }
 
-                    onCleanup(() => {
-                      if (scrollFrame === undefined) return
-                      cancelAnimationFrame(scrollFrame)
-                    })
+                        if (el.scrollTop !== s.y) el.scrollTop = s.y
+                        if (el.scrollLeft !== s.x) el.scrollLeft = s.x
+                      }
 
-                    return (
-                      <Tabs.Content
-                        value={tab}
-                        class="mt-3"
-                        ref={(el: HTMLDivElement) => {
-                          scroll = el
-                          restoreScroll()
-                        }}
-                        onScroll={handleScroll}
-                      >
-                        <Show when={selection()}>
-                          {(sel) => (
-                            <div class="hidden sticky top-0 z-10 px-6 py-2 _flex justify-end bg-background-base border-b border-border-weak-base">
-                              <button
-                                type="button"
-                                class="flex items-center gap-2 px-2 py-1 rounded-md bg-surface-base border border-border-base text-12-regular text-text-strong hover:bg-surface-raised-base-hover"
-                                onClick={() => {
-                                  const p = path()
-                                  if (!p) return
-                                  prompt.context.add({ type: "file", path: p, selection: sel() })
-                                }}
-                              >
-                                <Icon name="plus-small" size="small" />
-                                <span>Add {selectionLabel()} to context</span>
-                              </button>
-                            </div>
-                          )}
-                        </Show>
-                        <Switch>
-                          <Match when={state()?.loaded && isImage()}>
-                            <div class="px-6 py-4 pb-40">
-                              <img src={imageDataUrl()} alt={path()} class="max-w-full" />
-                            </div>
-                          </Match>
-                          <Match when={state()?.loaded && isSvg()}>
-                            <div class="flex flex-col gap-4 px-6 py-4">
+                      const handleScroll = (event: Event & { currentTarget: HTMLDivElement }) => {
+                        pending = {
+                          x: event.currentTarget.scrollLeft,
+                          y: event.currentTarget.scrollTop,
+                        }
+                        if (scrollFrame !== undefined) return
+
+                        scrollFrame = requestAnimationFrame(() => {
+                          scrollFrame = undefined
+
+                          const next = pending
+                          pending = undefined
+                          if (!next) return
+
+                          view().setScroll(tab, next)
+                        })
+                      }
+
+                      createEffect(
+                        on(
+                          () => state()?.loaded,
+                          (loaded) => {
+                            if (!loaded) return
+                            requestAnimationFrame(restoreScroll)
+                          },
+                          { defer: true },
+                        ),
+                      )
+
+                      createEffect(
+                        on(
+                          () => file.ready(),
+                          (ready) => {
+                            if (!ready) return
+                            requestAnimationFrame(restoreScroll)
+                          },
+                          { defer: true },
+                        ),
+                      )
+
+                      createEffect(
+                        on(
+                          () => tabs().active() === tab,
+                          (active) => {
+                            if (!active) return
+                            if (!state()?.loaded) return
+                            requestAnimationFrame(restoreScroll)
+                          },
+                        ),
+                      )
+
+                      onCleanup(() => {
+                        if (scrollFrame === undefined) return
+                        cancelAnimationFrame(scrollFrame)
+                      })
+
+                      return (
+                        <Tabs.Content
+                          value={tab}
+                          class="mt-3"
+                          ref={(el: HTMLDivElement) => {
+                            scroll = el
+                            restoreScroll()
+                          }}
+                          onScroll={handleScroll}
+                        >
+                          <Show when={selection()}>
+                            {(sel) => (
+                              <div class="hidden sticky top-0 z-10 px-6 py-2 _flex justify-end bg-background-base border-b border-border-weak-base">
+                                <button
+                                  type="button"
+                                  class="flex items-center gap-2 px-2 py-1 rounded-md bg-surface-base border border-border-base text-12-regular text-text-strong hover:bg-surface-raised-base-hover"
+                                  onClick={() => {
+                                    const p = path()
+                                    if (!p) return
+                                    prompt.context.add({ type: "file", path: p, selection: sel() })
+                                  }}
+                                >
+                                  <Icon name="plus-small" size="small" />
+                                  <span>Add {selectionLabel()} to context</span>
+                                </button>
+                              </div>
+                            )}
+                          </Show>
+                          <Switch>
+                            <Match when={state()?.loaded && isImage()}>
+                              <div class="px-6 py-4 pb-40">
+                                <img src={imageDataUrl()} alt={path()} class="max-w-full" />
+                              </div>
+                            </Match>
+                            <Match when={state()?.loaded && isSvg()}>
+                              <div class="flex flex-col gap-4 px-6 py-4">
+                                <Dynamic
+                                  component={codeComponent}
+                                  file={{
+                                    name: path() ?? "",
+                                    contents: svgContent() ?? "",
+                                    cacheKey: cacheKey(),
+                                  }}
+                                  enableLineSelection
+                                  selectedLines={selectedLines()}
+                                  onLineSelected={(range: SelectedLineRange | null) => {
+                                    const p = path()
+                                    if (!p) return
+                                    file.setSelectedLines(p, range)
+                                  }}
+                                  overflow="scroll"
+                                  class="select-text"
+                                />
+                                <Show when={svgPreviewUrl()}>
+                                  <div class="flex justify-center pb-40">
+                                    <img src={svgPreviewUrl()} alt={path()} class="max-w-full max-h-96" />
+                                  </div>
+                                </Show>
+                              </div>
+                            </Match>
+                            <Match when={state()?.loaded}>
                               <Dynamic
                                 component={codeComponent}
                                 file={{
                                   name: path() ?? "",
-                                  contents: svgContent() ?? "",
+                                  contents: contents(),
                                   cacheKey: cacheKey(),
                                 }}
                                 enableLineSelection
@@ -1227,59 +1279,35 @@ export default function Page() {
                                   file.setSelectedLines(p, range)
                                 }}
                                 overflow="scroll"
-                                class="select-text"
+                                class="select-text pb-40"
                               />
-                              <Show when={svgPreviewUrl()}>
-                                <div class="flex justify-center pb-40">
-                                  <img src={svgPreviewUrl()} alt={path()} class="max-w-full max-h-96" />
-                                </div>
-                              </Show>
-                            </div>
-                          </Match>
-                          <Match when={state()?.loaded}>
-                            <Dynamic
-                              component={codeComponent}
-                              file={{
-                                name: path() ?? "",
-                                contents: contents(),
-                                cacheKey: cacheKey(),
-                              }}
-                              enableLineSelection
-                              selectedLines={selectedLines()}
-                              onLineSelected={(range: SelectedLineRange | null) => {
-                                const p = path()
-                                if (!p) return
-                                file.setSelectedLines(p, range)
-                              }}
-                              overflow="scroll"
-                              class="select-text pb-40"
-                            />
-                          </Match>
-                          <Match when={state()?.loading}>
-                            <div class="px-6 py-4 text-text-weak">Loading...</div>
-                          </Match>
-                          <Match when={state()?.error}>
-                            {(err) => <div class="px-6 py-4 text-text-weak">{err()}</div>}
-                          </Match>
-                        </Switch>
-                      </Tabs.Content>
-                    )
-                  }}
-                </For>
-              </Tabs>
-              <DragOverlay>
-                <Show when={store.activeDraggable}>
-                  {(tab) => {
-                    const path = createMemo(() => file.pathFromTab(tab()))
-                    return (
-                      <div class="relative px-6 h-12 flex items-center bg-background-stronger border-x border-border-weak-base border-b border-b-transparent">
-                        <Show when={path()}>{(p) => <FileVisual active path={p()} />}</Show>
-                      </div>
-                    )
-                  }}
-                </Show>
-              </DragOverlay>
-            </DragDropProvider>
+                            </Match>
+                            <Match when={state()?.loading}>
+                              <div class="px-6 py-4 text-text-weak">Loading...</div>
+                            </Match>
+                            <Match when={state()?.error}>
+                              {(err) => <div class="px-6 py-4 text-text-weak">{err()}</div>}
+                            </Match>
+                          </Switch>
+                        </Tabs.Content>
+                      )
+                    }}
+                  </For>
+                </Tabs>
+                <DragOverlay>
+                  <Show when={store.activeDraggable}>
+                    {(tab) => {
+                      const path = createMemo(() => file.pathFromTab(tab()))
+                      return (
+                        <div class="relative px-6 h-12 flex items-center bg-background-stronger border-x border-border-weak-base border-b border-b-transparent">
+                          <Show when={path()}>{(p) => <FileVisual active path={p()} />}</Show>
+                        </div>
+                      )
+                    }}
+                  </Show>
+                </DragOverlay>
+              </DragDropProvider>
+            </div>
           </div>
         </Show>
       </div>
