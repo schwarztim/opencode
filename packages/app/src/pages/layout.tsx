@@ -53,6 +53,7 @@ import { useTheme, type ColorScheme } from "@opencode-ai/ui/theme"
 import { DialogSelectProvider } from "@/components/dialog-select-provider"
 import { DialogEditProject } from "@/components/dialog-edit-project"
 import { DialogSelectServer } from "@/components/dialog-select-server"
+import { DialogSettings } from "@/components/dialog-settings"
 import { useCommand, type CommandOption } from "@/context/command"
 import { ConstrainDragXAxis } from "@/utils/solid-dnd"
 import { DialogSelectDirectory } from "@/components/dialog-select-directory"
@@ -454,6 +455,10 @@ export default function Layout(props: ParentProps) {
 
   function openServer() {
     dialog.show(() => <DialogSelectServer />)
+  }
+
+  function openSettings() {
+    dialog.show(() => <DialogSettings />)
   }
 
   function navigateToProject(directory: string | undefined) {
@@ -1028,6 +1033,17 @@ export default function Layout(props: ParentProps) {
               onClick={chooseProject}
             >
               <Show when={expanded()}>Open project</Show>
+            </Button>
+          </Tooltip>
+          <Tooltip placement="right" value="Settings" inactive={expanded()}>
+            <Button
+              class="flex w-full text-left justify-start text-text-base stroke-[1.5px] rounded-lg px-2"
+              variant="ghost"
+              size="large"
+              icon="settings-gear"
+              onClick={openSettings}
+            >
+              <Show when={expanded()}>Settings</Show>
             </Button>
           </Tooltip>
           <Tooltip placement="right" value="Share feedback" inactive={expanded()}>

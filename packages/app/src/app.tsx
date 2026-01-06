@@ -14,6 +14,7 @@ import { PermissionProvider } from "@/context/permission"
 import { LayoutProvider } from "@/context/layout"
 import { GlobalSDKProvider } from "@/context/global-sdk"
 import { ServerProvider, useServer } from "@/context/server"
+import { SettingsProvider } from "@/context/settings"
 import { TerminalProvider } from "@/context/terminal"
 import { PromptProvider } from "@/context/prompt"
 import { FileProvider } from "@/context/file"
@@ -72,15 +73,17 @@ export function App() {
                         <GlobalSyncProvider>
                           <Router
                             root={(props) => (
-                              <PermissionProvider>
-                                <LayoutProvider>
-                                  <NotificationProvider>
-                                    <CommandProvider>
-                                      <Layout>{props.children}</Layout>
-                                    </CommandProvider>
-                                  </NotificationProvider>
-                                </LayoutProvider>
-                              </PermissionProvider>
+                              <SettingsProvider>
+                                <PermissionProvider>
+                                  <LayoutProvider>
+                                    <NotificationProvider>
+                                      <CommandProvider>
+                                        <Layout>{props.children}</Layout>
+                                      </CommandProvider>
+                                    </NotificationProvider>
+                                  </LayoutProvider>
+                                </PermissionProvider>
+                              </SettingsProvider>
                             )}
                           >
                             <Route
