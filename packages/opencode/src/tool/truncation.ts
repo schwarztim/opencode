@@ -7,7 +7,6 @@ import { lazy } from "../util/lazy"
 import { PermissionNext } from "../permission/next"
 import type { Agent } from "../agent/agent"
 
-// what models does opencode provider support? Read: https://models.dev/api.json
 export namespace Truncate {
   export const MAX_LINES = 2000
   export const MAX_BYTES = 50 * 1024
@@ -59,9 +58,9 @@ export namespace Truncate {
     }
 
     const out: string[] = []
-    var i = 0
-    var bytes = 0
-    var hitBytes = false
+    let i = 0
+    let bytes = 0
+    let hitBytes = false
 
     if (direction === "head") {
       for (i = 0; i < lines.length && i < maxLines; i++) {
