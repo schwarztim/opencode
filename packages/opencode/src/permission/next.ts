@@ -2,7 +2,6 @@ import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Config } from "@/config/config"
 import { Identifier } from "@/id/id"
-import { Plugin } from "@/plugin"
 import { Instance } from "@/project/instance"
 import { Storage } from "@/storage/storage"
 import { fn } from "@/util/fn"
@@ -121,37 +120,57 @@ export namespace PermissionNext {
     async (input) => {
       const s = await state()
       const { ruleset, ...request } = input
-      for (const pattern of request.patterns ?? []) {
+      const ask = (request.patterns ?? []).reduce((ask, pattern) => {
         const rule = evaluate(request.permission, pattern, ruleset, s.approved)
         log.info("evaluated", { permission: request.permission, pattern, action: rule })
-        if (rule.action === "deny")
+        if (rule.action === "deny") {
           throw new DeniedError(ruleset.filter((r) => Wildcard.match(request.permission, r.permission)))
-        if (rule.action === "ask") {
-          const id = input.id ?? Identifier.ascending("permission")
-          const info: Request = {
-            id,
-            ...request,
-          }
-          const pluginResult = await Plugin.trigger("permission.ask", info, {
-            status: "ask" as "ask" | "allow" | "deny",
-          })
-          if (pluginResult.status === "deny") {
-            throw new RejectedError()
-          }
-          if (pluginResult.status === "allow") {
-            continue
-          }
-          return new Promise<void>((resolve, reject) => {
-            s.pending[id] = {
-              info,
-              resolve,
-              reject,
+        }
+        return ask || rule.action === "ask"
+      }, false)
+
+      if (!ask) return
+
+      const id = input.id ?? Identifier.ascending("permission")
+      const info: Request = {
+        id,
+        ...request,
+      }
+
+      return new Promise<void>((resolve, reject) => {
+        s.pending[id] = {
+          info,
+          resolve,
+          reject,
+        }
+
+        void import("@/plugin")
+          .then((plugin) =>
+            plugin.Plugin.trigger("permission.ask", info, {
+              status: "ask" as "ask" | "allow" | "deny",
+            }),
+          )
+          .then((result) => {
+            const existing = s.pending[id]
+            if (!existing) return
+            if (result.status === "deny") {
+              delete s.pending[id]
+              existing.reject(new RejectedError())
+              return
+            }
+            if (result.status === "allow") {
+              delete s.pending[id]
+              existing.resolve()
+              return
             }
             Bus.publish(Event.Asked, info)
           })
-        }
-        if (rule.action === "allow") continue
-      }
+          .catch((error) => {
+            log.error("permission.ask plugin failed", { error })
+            if (!s.pending[id]) return
+            Bus.publish(Event.Asked, info)
+          })
+      })
     },
   )
 
