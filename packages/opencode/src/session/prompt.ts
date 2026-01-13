@@ -1190,6 +1190,25 @@ export namespace SessionPrompt {
     const userMessage = input.messages.findLast((msg) => msg.info.role === "user")
     if (!userMessage) return input.messages
     const assistantMessage = input.messages.findLast((msg) => msg.info.role === "assistant")
+
+    // Switching from plan mode to build mode
+    if (input.agent.name !== "plan" && assistantMessage?.info.agent === "plan") {
+      const plan = Session.plan(input.session)
+      const exists = await Bun.file(plan).exists()
+      if (exists) {
+        const part = await Session.updatePart({
+          id: Identifier.ascending("part"),
+          messageID: userMessage.info.id,
+          sessionID: userMessage.info.sessionID,
+          type: "text",
+          text: BUILD_SWITCH.replace("{{plan}}", plan),
+          synthetic: true,
+        })
+        userMessage.parts.push(part)
+      }
+    }
+
+    // Entering plan mode
     if (input.agent.name === "plan" && assistantMessage?.info.agent !== "plan") {
       const plan = Session.plan(input.session)
       const exists = await Bun.file(plan).exists()
@@ -1261,11 +1280,11 @@ Goal: Write your final plan to the plan file (the only file you can edit).
 - Include the paths of critical files to be modified
 - Include a verification section describing how to test the changes end-to-end (run the code, use MCP tools, run tests)
 
-### Phase 5: Call exit_plan tool
-At the very end of your turn, once you have asked the user questions and are happy with your final plan file - you should always call exit_plan to indicate to the user that you are done planning.
-This is critical - your turn should only end with either asking the user a question or calling exit_plan. Do not stop unless it's for these 2 reasons.
+### Phase 5: Call plan_exit tool
+At the very end of your turn, once you have asked the user questions and are happy with your final plan file - you should always call plan_exit to indicate to the user that you are done planning.
+This is critical - your turn should only end with either asking the user a question or calling plan_exit. Do not stop unless it's for these 2 reasons.
 
-**Important:** Use question tool to clarify requirements/approach, use exit_plan to request plan approval. Do NOT use question tool to ask "Is this plan okay?" - that's what exit_plan does.
+**Important:** Use question tool to clarify requirements/approach, use plan_exit to request plan approval. Do NOT use question tool to ask "Is this plan okay?" - that's what plan_exit does.
 
 NOTE: At any point in time through this workflow you should feel free to ask the user questions or clarifications. Don't make large assumptions about user intent. The goal is to present a well researched plan to the user, and tie any loose ends before implementation begins.
 </system-reminder>`,
