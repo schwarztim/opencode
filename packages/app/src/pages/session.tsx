@@ -1107,7 +1107,7 @@ export default function Page() {
                           if (isDesktop()) scheduleScrollSpy(e.currentTarget)
                         }}
                         onClick={autoScroll.handleInteraction}
-                        class="relative min-w-0 w-full h-full overflow-y-auto no-scrollbar"
+                        class="relative min-w-0 w-full h-full overflow-y-auto no-scrollbar snap-y snap-mandatory"
                       >
                         <div
                           ref={autoScroll.contentRef}
@@ -1156,13 +1156,12 @@ export default function Page() {
                                   navMark({ dir: params.dir, to: id, name: "session:first-turn-mounted" })
                                 })
                               }
-
                               return (
                                 <div
                                   id={anchor(message.id)}
                                   data-message-id={message.id}
                                   classList={{
-                                    "min-w-0 w-full max-w-full": true,
+                                    "min-w-0 w-full max-w-full snap-start": true,
                                     "last:min-h-[calc(100vh-5.5rem-var(--prompt-height,8rem)-64px)] md:last:min-h-[calc(100vh-4.5rem-var(--prompt-height,10rem)-64px)]":
                                       platform.platform !== "desktop",
                                     "last:min-h-[calc(100vh-7rem-var(--prompt-height,8rem)-64px)] md:last:min-h-[calc(100vh-6rem-var(--prompt-height,10rem)-64px)]":
