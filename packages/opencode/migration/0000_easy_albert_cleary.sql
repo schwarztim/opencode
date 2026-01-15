@@ -1,20 +1,16 @@
 CREATE TABLE `project` (
 	`id` text PRIMARY KEY NOT NULL,
-	`data` text NOT NULL
+	`worktree` text NOT NULL,
+	`vcs` text,
+	`name` text,
+	`icon_url` text,
+	`icon_color` text,
+	`time_created` integer NOT NULL,
+	`time_updated` integer NOT NULL,
+	`time_initialized` integer,
+	`sandboxes` text NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `session` (
-	`id` text PRIMARY KEY NOT NULL,
-	`project_id` text NOT NULL,
-	`parent_id` text,
-	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL,
-	`data` text NOT NULL,
-	FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON UPDATE no action ON DELETE cascade
-);
---> statement-breakpoint
-CREATE INDEX `session_project_idx` ON `session` (`project_id`);--> statement-breakpoint
-CREATE INDEX `session_parent_idx` ON `session` (`parent_id`);--> statement-breakpoint
 CREATE TABLE `message` (
 	`id` text PRIMARY KEY NOT NULL,
 	`session_id` text NOT NULL,
@@ -46,6 +42,18 @@ CREATE TABLE `session_diff` (
 	FOREIGN KEY (`session_id`) REFERENCES `session`(`id`) ON UPDATE no action ON DELETE cascade
 );
 --> statement-breakpoint
+CREATE TABLE `session` (
+	`id` text PRIMARY KEY NOT NULL,
+	`project_id` text NOT NULL,
+	`parent_id` text,
+	`created_at` integer NOT NULL,
+	`updated_at` integer NOT NULL,
+	`data` text NOT NULL,
+	FOREIGN KEY (`project_id`) REFERENCES `project`(`id`) ON UPDATE no action ON DELETE cascade
+);
+--> statement-breakpoint
+CREATE INDEX `session_project_idx` ON `session` (`project_id`);--> statement-breakpoint
+CREATE INDEX `session_parent_idx` ON `session` (`parent_id`);--> statement-breakpoint
 CREATE TABLE `todo` (
 	`session_id` text PRIMARY KEY NOT NULL,
 	`data` text NOT NULL,

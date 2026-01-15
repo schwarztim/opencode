@@ -56,7 +56,21 @@ export async function migrateFromJson(sqlite: Database, customStorageDir?: strin
         stats.errors.push(`project missing id: ${file}`)
         continue
       }
-      db.insert(ProjectTable).values({ id: data.id, data }).onConflictDoNothing().run()
+      db.insert(ProjectTable)
+        .values({
+          id: data.id,
+          worktree: data.worktree ?? "/",
+          vcs: data.vcs,
+          name: data.name ?? undefined,
+          icon_url: data.icon?.url,
+          icon_color: data.icon?.color,
+          time_created: data.time?.created ?? Date.now(),
+          time_updated: data.time?.updated ?? Date.now(),
+          time_initialized: data.time?.initialized,
+          sandboxes: data.sandboxes ?? [],
+        })
+        .onConflictDoNothing()
+        .run()
       stats.projects++
     } catch (e) {
       stats.errors.push(`failed to migrate project ${file}: ${e}`)

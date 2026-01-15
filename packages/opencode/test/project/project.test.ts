@@ -102,7 +102,7 @@ describe("Project.discover", () => {
     await Project.discover(project)
 
     const row = db().select().from(ProjectTable).where(eq(ProjectTable.id, project.id)).get()
-    const updated = row?.data
+    const updated = row ? Project.fromRow(row) : undefined
     expect(updated?.icon).toBeDefined()
     expect(updated?.icon?.url).toStartWith("data:")
     expect(updated?.icon?.url).toContain("base64")
@@ -118,7 +118,7 @@ describe("Project.discover", () => {
     await Project.discover(project)
 
     const row = db().select().from(ProjectTable).where(eq(ProjectTable.id, project.id)).get()
-    const updated = row?.data
+    const updated = row ? Project.fromRow(row) : undefined
     expect(updated?.icon).toBeUndefined()
   })
 })

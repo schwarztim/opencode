@@ -4,6 +4,7 @@ import { bootstrap } from "../bootstrap"
 import { UI } from "../ui"
 import { db } from "../../storage/db"
 import { ProjectTable } from "../../project/project.sql"
+import { Project } from "../../project/project"
 import {
   SessionTable,
   MessageTable,
@@ -55,7 +56,8 @@ const ExportCommand = cmd({
       const projectDir = path.join(outDir, "project")
       await fs.mkdir(projectDir, { recursive: true })
       for (const row of db().select().from(ProjectTable).all()) {
-        await Bun.write(path.join(projectDir, `${row.id}.json`), JSON.stringify(row.data, null, 2))
+        const project = Project.fromRow(row)
+        await Bun.write(path.join(projectDir, `${row.id}.json`), JSON.stringify(project, null, 2))
         stats.projects++
       }
 

@@ -7,6 +7,7 @@ import fs from "fs/promises"
 import os from "os"
 import { migrateFromJson } from "../../src/storage/json-migration"
 import { ProjectTable } from "../../src/project/project.sql"
+import { Project } from "../../src/project/project"
 import {
   SessionTable,
   MessageTable,
@@ -198,8 +199,9 @@ describe("JSON to SQLite migration", () => {
       expect(stats?.projects).toBe(1)
       const db = drizzle(sqlite)
       const row = db.select().from(ProjectTable).where(eq(ProjectTable.id, project.id)).get()
-      expect(row?.data.id).toBe(project.id)
-      expect(row?.data.icon?.url).toBe(project.icon.url)
+      const migrated = row ? Project.fromRow(row) : undefined
+      expect(migrated?.id).toBe(project.id)
+      expect(migrated?.icon?.url).toBe(project.icon.url)
     })
 
     test("skips project with missing id field", async () => {
@@ -583,10 +585,11 @@ describe("JSON to SQLite migration", () => {
 
       const db = drizzle(sqlite)
       const row = db.select().from(ProjectTable).where(eq(ProjectTable.id, fullProject.id)).get()
-      expect(row?.data.id).toBe(fullProject.id)
-      expect(row?.data.name).toBe(fullProject.name)
-      expect(row?.data.sandboxes).toEqual(fullProject.sandboxes)
-      expect(row?.data.icon?.color).toBe("#ff0000")
+      const data = row ? Project.fromRow(row) : undefined
+      expect(data?.id).toBe(fullProject.id)
+      expect(data?.name).toBe(fullProject.name)
+      expect(data?.sandboxes).toEqual(fullProject.sandboxes)
+      expect(data?.icon?.color).toBe("#ff0000")
     })
 
     test("handles unicode in text fields", async () => {
@@ -603,8 +606,9 @@ describe("JSON to SQLite migration", () => {
 
       const db = drizzle(sqlite)
       const row = db.select().from(ProjectTable).where(eq(ProjectTable.id, unicodeProject.id)).get()
-      expect(row?.data.name).toBe("Проект с юникодом 🚀")
-      expect(row?.data.worktree).toBe("/path/测试")
+      const data = row ? Project.fromRow(row) : undefined
+      expect(data?.name).toBe("Проект с юникодом 🚀")
+      expect(data?.worktree).toBe("/path/测试")
     })
 
     test("migration is idempotent with onConflictDoNothing", async () => {

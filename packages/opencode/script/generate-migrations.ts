@@ -4,7 +4,7 @@ import { Glob } from "bun"
 import path from "path"
 import fs from "fs"
 
-const migrationsDir = "./drizzle"
+const migrationsDir = "./migration"
 const outFile = "./src/storage/migrations.generated.ts"
 
 if (!fs.existsSync(migrationsDir)) {

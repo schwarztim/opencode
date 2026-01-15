@@ -1,6 +1,4 @@
 // Auto-generated - do not edit
-import m0 from "../../drizzle/0000_initial.sql" with { type: "text" }
+import m0 from "../../migration/0000_easy_albert_cleary.sql" with { type: "text" }
 
-export const migrations = [
-  { name: "0000_initial", sql: m0 },
-]
+export const migrations = [{ name: "0000_easy_albert_cleary", sql: m0 }]
