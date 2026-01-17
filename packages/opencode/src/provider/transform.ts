@@ -261,6 +261,7 @@ export namespace ProviderTransform {
     if (key && key !== model.providerID) {
       const remap = (opts: Record<string, any> | undefined) => {
         if (!opts) return opts
+        if (!(model.providerID in opts)) return opts
         const result = { ...opts }
         result[key] = result[model.providerID]
         delete result[model.providerID]
