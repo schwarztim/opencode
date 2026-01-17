@@ -1002,14 +1002,16 @@ export namespace Provider {
         // Strip openai itemId metadata following what codex does
         if (model.api.npm === "@ai-sdk/openai" && opts.body && opts.method === "POST") {
           const body = JSON.parse(opts.body as string)
-          if (Array.isArray(body.input)) {
-            for (const item of body.input) {
-              if (item.type === "reasoning" && "id" in item) {
-                delete item.id
+          if (body.store === false) {
+            if (Array.isArray(body.input)) {
+              for (const item of body.input) {
+                if (item.type === "reasoning" && "id" in item) {
+                  delete item.id
+                }
               }
             }
+            opts.body = JSON.stringify(body)
           }
-          opts.body = JSON.stringify(body)
         }
 
         return fetchFn(input, {
