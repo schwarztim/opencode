@@ -478,7 +478,10 @@ export namespace MessageV2 {
       if (msg.info.role === "assistant") {
         if (
           msg.info.error &&
-          !(MessageV2.AbortedError.isInstance(msg.info.error) && msg.parts.some((part) => part.type !== "step-start"))
+          !(
+            MessageV2.AbortedError.isInstance(msg.info.error) &&
+            msg.parts.some((part) => part.type !== "step-start" && part.type !== "reasoning")
+          )
         ) {
           continue
         }
