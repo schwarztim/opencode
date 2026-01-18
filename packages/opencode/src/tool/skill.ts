@@ -4,6 +4,7 @@ import { Tool } from "./tool"
 import { Skill } from "../skill"
 import { ConfigMarkdown } from "../config/markdown"
 import { PermissionNext } from "../permission/next"
+import { Plugin } from "../plugin"
 
 const parameters = z.object({
   name: z.string().describe("The skill identifier from available_skills (e.g., 'code-review' or 'category/helper')"),
@@ -55,12 +56,19 @@ export const SkillTool = Tool.define("skill", async (ctx) => {
         always: [params.name],
         metadata: {},
       })
+
+      // Trigger before hook
+      await Plugin.trigger("skill.load.before", { skill: params.name, sessionID: ctx.sessionID }, {})
+
       // Load and parse skill content
       const parsed = await ConfigMarkdown.parse(skill.location)
       const dir = path.dirname(skill.location)
 
       // Format output similar to plugin pattern
       const output = [`## Skill: ${skill.name}`, "", `**Base directory**: ${dir}`, "", parsed.content.trim()].join("\n")
+
+      // Trigger after hook
+      await Plugin.trigger("skill.load.after", { skill: params.name, sessionID: ctx.sessionID }, { content: output })
 
       return {
         title: `Loaded skill: ${skill.name}`,

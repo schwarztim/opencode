@@ -12,12 +12,26 @@ import { defer } from "@/util/defer"
 import { Config } from "../config/config"
 import { PermissionNext } from "@/permission/next"
 
+interface TaskMetadata {
+  summary: { id: string; tool: string; state: { status: string; title?: string } }[]
+  sessionId: string
+  taskId?: string
+  resumed?: boolean
+  background?: boolean
+}
+
 const parameters = z.object({
   description: z.string().describe("A short (3-5 words) description of the task"),
   prompt: z.string().describe("The task for the agent to perform"),
   subagent_type: z.string().describe("The type of specialized agent to use for this task"),
   session_id: z.string().describe("Existing Task session to continue").optional(),
   command: z.string().describe("The command that triggered this task").optional(),
+  run_in_background: z
+    .boolean()
+    .optional()
+    .describe("Execute task asynchronously without blocking. Returns immediately with task ID."),
+  run_in_worktree: z.boolean().optional().describe("Execute task in isolated git worktree."),
+  resume_task_id: z.string().optional().describe("Resume a previously failed or interrupted background task by ID"),
 })
 
 export const TaskTool = Tool.define("task", async (ctx) => {
@@ -40,6 +54,55 @@ export const TaskTool = Tool.define("task", async (ctx) => {
     parameters,
     async execute(params: z.infer<typeof parameters>, ctx) {
       const config = await Config.get()
+
+      // Handle resume of background task
+      if (params.resume_task_id) {
+        const { TaskManager } = await import("@/task-manager")
+        const task = await TaskManager.resumeTask(params.resume_task_id)
+        const metadata: TaskMetadata = {
+          summary: [],
+          sessionId: task.sessionID,
+          taskId: task.id,
+          resumed: true,
+          background: false,
+        }
+        return {
+          title: `Task resumed: ${task.description}`,
+          output: `Task ID: ${task.id}\nStatus: ${task.status}`,
+          metadata,
+        }
+      }
+
+      // Handle background execution
+      if (params.run_in_background) {
+        const { TaskManager } = await import("@/task-manager")
+        const task = await TaskManager.queueTask({
+          sessionID: ctx.sessionID,
+          parentMessageID: ctx.messageID,
+          agent: params.subagent_type,
+          description: params.description,
+          prompt: params.prompt,
+          runInWorktree: params.run_in_worktree,
+        })
+
+        const metadata: TaskMetadata = {
+          summary: [],
+          sessionId: task.sessionID,
+          taskId: task.id,
+          resumed: false,
+          background: true,
+        }
+        return {
+          title: `Background task queued: ${params.description}`,
+          output: [
+            `Task ID: ${task.id}`,
+            `Status: ${task.status}`,
+            ``,
+            `Use task tool with resume_task_id="${task.id}" to check status or resume.`,
+          ].join("\n"),
+          metadata,
+        }
+      }
 
       // Skip permission check when user explicitly invoked via @ or command subtask
       if (!ctx.extra?.bypassAgentCheck) {
@@ -185,12 +248,13 @@ export const TaskTool = Tool.define("task", async (ctx) => {
 
       const output = text + "\n\n" + ["<task_metadata>", `session_id: ${session.id}`, "</task_metadata>"].join("\n")
 
+      const metadata: TaskMetadata = {
+        summary,
+        sessionId: session.id,
+      }
       return {
         title: params.description,
-        metadata: {
-          summary,
-          sessionId: session.id,
-        },
+        metadata,
         output,
       }
     },

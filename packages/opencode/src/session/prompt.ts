@@ -696,6 +696,22 @@ export namespace SessionPrompt {
         inputSchema: jsonSchema(schema as any),
         async execute(args, options) {
           const ctx = context(args, options)
+
+          // Pre-tool validation hook - can block execution or modify args
+          const { HookOrchestrator } = await import("@/hook")
+          const validateOutput = { args, blocked: false, reason: undefined as string | undefined }
+          await HookOrchestrator.preToolValidate(
+            {
+              tool: item.id,
+              sessionID: ctx.sessionID,
+              callID: ctx.callID ?? "",
+              args,
+            },
+            validateOutput
+          )
+          // Use potentially modified args
+          const effectiveArgs = validateOutput.args
+
           await Plugin.trigger(
             "tool.execute.before",
             {
@@ -704,10 +720,10 @@ export namespace SessionPrompt {
               callID: ctx.callID,
             },
             {
-              args,
+              args: effectiveArgs,
             },
           )
-          const result = await item.execute(args, ctx)
+          const result = await item.execute(effectiveArgs, ctx)
           await Plugin.trigger(
             "tool.execute.after",
             {
@@ -717,6 +733,17 @@ export namespace SessionPrompt {
             },
             result,
           )
+
+          // Post-tool transform hook - can modify output
+          await HookOrchestrator.postToolTransform(
+            {
+              tool: item.id,
+              sessionID: ctx.sessionID,
+              callID: ctx.callID ?? "",
+            },
+            result
+          )
+
           return result
         },
         toModelOutput(result) {
@@ -736,6 +763,21 @@ export namespace SessionPrompt {
       item.execute = async (args, opts) => {
         const ctx = context(args, opts)
 
+        // Pre-tool validation hook - can block execution or modify args
+        const { HookOrchestrator } = await import("@/hook")
+        const validateOutput = { args, blocked: false, reason: undefined as string | undefined }
+        await HookOrchestrator.preToolValidate(
+          {
+            tool: key,
+            sessionID: ctx.sessionID,
+            callID: opts.toolCallId,
+            args,
+          },
+          validateOutput
+        )
+        // Use potentially modified args
+        const effectiveArgs = validateOutput.args
+
         await Plugin.trigger(
           "tool.execute.before",
           {
@@ -744,7 +786,7 @@ export namespace SessionPrompt {
             callID: opts.toolCallId,
           },
           {
-            args,
+            args: effectiveArgs,
           },
         )
 
@@ -755,7 +797,7 @@ export namespace SessionPrompt {
           always: ["*"],
         })
 
-        const result = await execute(args, opts)
+        const result = await execute(effectiveArgs, opts)
 
         await Plugin.trigger(
           "tool.execute.after",
@@ -801,13 +843,25 @@ export namespace SessionPrompt {
           }
         }
 
-        return {
+        const transformedResult = {
           title: "",
           metadata: result.metadata ?? {},
           output: textParts.join("\n\n"),
           attachments,
           content: result.content, // directly return content to preserve ordering when outputting to model
         }
+
+        // Post-tool transform hook - can modify output
+        await HookOrchestrator.postToolTransform(
+          {
+            tool: key,
+            sessionID: ctx.sessionID,
+            callID: opts.toolCallId,
+          },
+          transformedResult
+        )
+
+        return transformedResult
       }
       item.toModelOutput = (result) => {
         return {

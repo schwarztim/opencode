@@ -219,4 +219,58 @@ export interface Hooks {
     input: { sessionID: string; messageID: string; partID: string },
     output: { text: string },
   ) => Promise<void>
+
+  /**
+   * HOOK: Validate tool execution before it runs
+   * Can block execution or modify arguments
+   */
+  "tool.execute.validate"?: (
+    input: { tool: string; sessionID: string; callID: string; args: any },
+    output: { args: any; blocked: boolean; reason?: string },
+  ) => Promise<void>
+
+  /**
+   * HOOK: Transform tool result after execution
+   * Can modify output, title, or metadata
+   */
+  "tool.result.transform"?: (
+    input: { tool: string; sessionID: string; callID: string },
+    output: { title: string; output: string; metadata: any },
+  ) => Promise<void>
+
+  /**
+   * HOOK: Session stopped/completed
+   * Called when agent finishes (stop/compact/error)
+   */
+  "session.stop"?: (
+    input: { sessionID: string; reason: "stop" | "compact" | "error" },
+    output: { metadata: Record<string, any> },
+  ) => Promise<void>
+
+  /**
+   * HOOK: Send async notification
+   * Non-blocking, for background alerts
+   */
+  "notification.send"?: (
+    input: { sessionID: string; type: string },
+    output: { title: string; body: string; data: any },
+  ) => Promise<void>
+
+  /**
+   * HOOK: Called before a skill is loaded
+   * Allows plugins to prepare or validate before skill content is read
+   */
+  "skill.load.before"?: (
+    input: { skill: string; sessionID: string },
+    output: {},
+  ) => Promise<void>
+
+  /**
+   * HOOK: Called after a skill is loaded
+   * Allows plugins to transform or augment skill content
+   */
+  "skill.load.after"?: (
+    input: { skill: string; sessionID: string },
+    output: { content: string },
+  ) => Promise<void>
 }

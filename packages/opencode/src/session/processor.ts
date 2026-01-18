@@ -394,10 +394,25 @@ export namespace SessionProcessor {
           }
           input.assistantMessage.time.completed = Date.now()
           await Session.updateMessage(input.assistantMessage)
-          if (needsCompaction) return "compact"
-          if (blocked) return "stop"
-          if (input.assistantMessage.error) return "stop"
-          return "continue"
+
+          // Determine final status
+          const status = needsCompaction ? "compact" : blocked || input.assistantMessage.error ? "stop" : "continue"
+
+          // Trigger session.stop hook if stopping
+          if (status === "stop" || status === "compact") {
+            const { HookOrchestrator } = await import("@/hook")
+            await HookOrchestrator.sessionStop(
+              {
+                sessionID: input.sessionID,
+                reason: status === "compact" ? "compact" : input.assistantMessage.error ? "error" : "stop",
+              },
+              { metadata: {} }
+            ).catch((err) => {
+              log.error("session.stop hook failed", { error: err })
+            })
+          }
+
+          return status
         }
       },
     }

@@ -63,16 +63,22 @@ export namespace SystemPrompt {
   }
 
   const LOCAL_RULE_FILES = [
+    "OPENCODE.md",
     "AGENTS.md",
     "CLAUDE.md",
     "CONTEXT.md", // deprecated
   ]
-  const GLOBAL_RULE_FILES = [path.join(Global.Path.config, "AGENTS.md")]
+  const GLOBAL_RULE_FILES = [
+    path.join(Global.Path.config, "OPENCODE.md"),
+    path.join(Global.Path.config, "AGENTS.md"),
+  ]
   if (!Flag.OPENCODE_DISABLE_CLAUDE_CODE_PROMPT) {
+    GLOBAL_RULE_FILES.push(path.join(os.homedir(), ".claude", "OPENCODE.md"))
     GLOBAL_RULE_FILES.push(path.join(os.homedir(), ".claude", "CLAUDE.md"))
   }
 
   if (Flag.OPENCODE_CONFIG_DIR) {
+    GLOBAL_RULE_FILES.push(path.join(Flag.OPENCODE_CONFIG_DIR, "OPENCODE.md"))
     GLOBAL_RULE_FILES.push(path.join(Flag.OPENCODE_CONFIG_DIR, "AGENTS.md"))
   }
 

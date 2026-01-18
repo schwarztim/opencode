@@ -18,6 +18,8 @@ export namespace Skill {
     name: z.string(),
     description: z.string(),
     location: z.string(),
+    category: z.string().optional(),
+    tags: z.array(z.string()).optional(),
   })
   export type Info = z.infer<typeof Info>
 
@@ -57,8 +59,13 @@ export namespace Skill {
 
       if (!md) return
 
-      const parsed = Info.pick({ name: true, description: true }).safeParse(md.data)
+      const parsed = Info.pick({ name: true, description: true, tags: true }).safeParse(md.data)
       if (!parsed.success) return
+
+      // Extract category from path
+      const pathParts = match.split(path.sep)
+      const skillIndex = pathParts.findIndex((p) => p === "SKILL.md")
+      const category = skillIndex >= 2 ? pathParts[skillIndex - 1] : undefined
 
       // Warn on duplicate skill names
       if (skills[parsed.data.name]) {
@@ -73,6 +80,8 @@ export namespace Skill {
         name: parsed.data.name,
         description: parsed.data.description,
         location: match,
+        category,
+        tags: parsed.data.tags,
       }
     }
 

@@ -1,0 +1,13 @@
+Search for code symbols (functions, classes, methods) in the codebase.
+
+Uses local codebase indexing for accurate symbol extraction.
+Results are ranked by relevance and include file location, line numbers, and signatures.
+
+Examples:
+- "handleClick" -> finds all functions/methods named handleClick
+- "UserService" -> finds classes/interfaces named UserService
+
+Parameters:
+- query: Symbol name or pattern to search for
+- kind: Optional filter by symbol type (function, class, method, etc.)
+- limit: Maximum results to return (default: 20)
