@@ -79,12 +79,35 @@ function askPassword(question) {
   });
 }
 
+// Fetch latest defaults from GitHub (falls back to hardcoded if offline)
+async function fetchDefaults() {
+  const defaults = {
+    deployment: 'model-router',
+    apiVersion: '2025-01-01-preview',
+  };
+
+  try {
+    const res = await fetch('https://raw.githubusercontent.com/schwarztim/opencode/dev/azure-defaults.json', {
+      signal: AbortSignal.timeout(3000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.apiVersion) defaults.apiVersion = data.apiVersion;
+      if (data.deployment) defaults.deployment = data.deployment;
+    }
+  } catch {
+    // Offline or fetch failed - use hardcoded defaults
+  }
+
+  return defaults;
+}
+
 // Parse Azure endpoint - handles both full URL and base URL
-function parseAzureEndpoint(input) {
+function parseAzureEndpoint(input, defaults) {
   const result = {
     baseUrl: '',
-    deployment: 'model-router',
-    apiVersion: '2025-01-01-preview', // Latest API version
+    deployment: defaults.deployment,
+    apiVersion: defaults.apiVersion,
   };
 
   try {
@@ -170,6 +193,9 @@ async function main() {
   console.log('─'.repeat(40));
   console.log();
 
+  // Fetch latest defaults (non-blocking, falls back to hardcoded)
+  const defaults = await fetchDefaults();
+
   // Endpoint - accepts full URL or just the base
   console.log('Paste your Azure OpenAI endpoint');
   console.log(colors.dim + 'Tip: You can paste the full URL from Azure Portal - we\'ll extract what we need' + colors.reset);
@@ -182,7 +208,7 @@ async function main() {
   }
 
   // Parse the endpoint - extracts base URL, deployment, and api-version automatically
-  const parsed = parseAzureEndpoint(rawEndpoint);
+  const parsed = parseAzureEndpoint(rawEndpoint, defaults);
 
   // API Key
   console.log();
