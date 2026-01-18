@@ -37,6 +37,36 @@ function getConfigPath() {
   return path.join(os.homedir(), '.config', 'opencode', 'opencode.json');
 }
 
+// Load existing config if it exists
+function loadExistingConfig() {
+  const configPath = getConfigPath();
+  try {
+    if (fs.existsSync(configPath)) {
+      const content = fs.readFileSync(configPath, 'utf-8');
+      return JSON.parse(content);
+    }
+  } catch {
+    // Config doesn't exist or is invalid
+  }
+  return null;
+}
+
+// Extract existing Azure settings from config
+function getExistingAzureSettings(config) {
+  if (!config?.provider?.azure?.options) return null;
+
+  const azure = config.provider.azure;
+  const opts = azure.options;
+  const modelName = Object.keys(azure.models || {})[0] || 'model-router';
+
+  return {
+    baseUrl: opts.baseURL || '',
+    apiKey: opts.apiKey || '',
+    deployment: modelName,
+    apiVersion: opts.apiVersion || '2025-01-01-preview',
+  };
+}
+
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -49,9 +79,15 @@ function ask(question, defaultValue = '') {
   });
 }
 
-function askPassword(question) {
+function askPassword(question, existingValue = '') {
   return new Promise((resolve) => {
-    process.stdout.write(`${question}: `);
+    if (existingValue) {
+      const masked = existingValue.slice(0, 4) + '...' + existingValue.slice(-4);
+      process.stdout.write(`${question} [${masked}]: `);
+    } else {
+      process.stdout.write(`${question}: `);
+    }
+
     if (process.stdin.isTTY) {
       const stdin = process.stdin;
       stdin.setRawMode(true);
@@ -63,7 +99,8 @@ function askPassword(question) {
           stdin.setRawMode(false);
           stdin.removeListener('data', onData);
           console.log();
-          resolve(password);
+          // If user just pressed Enter and there's an existing value, use it
+          resolve(password || existingValue);
         } else if (char === '\u0003') {
           process.exit();
         } else if (char === '\u007F' || char === '\b') {
@@ -74,7 +111,7 @@ function askPassword(question) {
       };
       stdin.on('data', onData);
     } else {
-      rl.question('', resolve);
+      rl.question('', (answer) => resolve(answer || existingValue));
     }
   });
 }
@@ -193,40 +230,77 @@ async function main() {
   console.log('─'.repeat(40));
   console.log();
 
+  // Load existing config
+  const existingConfig = loadExistingConfig();
+  const existingAzure = getExistingAzureSettings(existingConfig);
+
   // Fetch latest defaults (non-blocking, falls back to hardcoded)
   const defaults = await fetchDefaults();
 
-  // Endpoint - accepts full URL or just the base
-  console.log('Paste your Azure OpenAI endpoint');
-  console.log(colors.dim + 'Tip: You can paste the full URL from Azure Portal - we\'ll extract what we need' + colors.reset);
-  console.log();
-  const rawEndpoint = await ask('Endpoint');
-
-  if (!rawEndpoint) {
-    console.log(colors.red + 'Endpoint is required' + colors.reset);
-    process.exit(1);
+  // If existing config found, show current values
+  if (existingAzure && existingAzure.baseUrl) {
+    console.log(colors.green + '✓ Existing configuration found' + colors.reset);
+    console.log(colors.dim + '  Press Enter to keep current values, or type new ones' + colors.reset);
+    console.log();
   }
 
-  // Parse the endpoint - extracts base URL, deployment, and api-version automatically
-  const parsed = parseAzureEndpoint(rawEndpoint, defaults);
+  // Endpoint - accepts full URL or just the base
+  let baseUrl, deployment, apiVersion;
+
+  if (existingAzure?.baseUrl) {
+    console.log('Azure OpenAI Endpoint');
+    const rawEndpoint = await ask('Endpoint', existingAzure.baseUrl);
+
+    if (rawEndpoint === existingAzure.baseUrl) {
+      // User kept existing - use existing parsed values
+      baseUrl = existingAzure.baseUrl;
+      deployment = existingAzure.deployment;
+      apiVersion = existingAzure.apiVersion;
+    } else {
+      // User entered new value - parse it
+      const parsed = parseAzureEndpoint(rawEndpoint, defaults);
+      baseUrl = parsed.baseUrl;
+      deployment = parsed.deployment;
+      apiVersion = parsed.apiVersion;
+    }
+  } else {
+    console.log('Paste your Azure OpenAI endpoint');
+    console.log(colors.dim + 'Tip: You can paste the full URL from Azure Portal - we\'ll extract what we need' + colors.reset);
+    console.log();
+    const rawEndpoint = await ask('Endpoint');
+
+    if (!rawEndpoint) {
+      console.log(colors.red + 'Endpoint is required' + colors.reset);
+      process.exit(1);
+    }
+
+    const parsed = parseAzureEndpoint(rawEndpoint, defaults);
+    baseUrl = parsed.baseUrl;
+    deployment = parsed.deployment;
+    apiVersion = parsed.apiVersion;
+  }
 
   // API Key
   console.log();
-  const apiKey = await askPassword('API Key');
+  const apiKey = await askPassword('API Key', existingAzure?.apiKey || '');
   if (!apiKey) {
     console.log(colors.red + 'API Key is required' + colors.reset);
     process.exit(1);
   }
 
-  // Use auto-detected values
-  let deployment = parsed.deployment;
-  let apiVersion = parsed.apiVersion;
+  // Deployment (only ask if not using existing)
+  if (existingAzure?.deployment && deployment === existingAzure.deployment) {
+    // Keep existing
+  } else {
+    console.log();
+    deployment = await ask('Deployment name', deployment);
+  }
 
   console.log();
   console.log(colors.blue + 'Testing connection...' + colors.reset);
-  console.log(colors.dim + `  ${parsed.baseUrl}/deployments/${deployment}` + colors.reset);
+  console.log(colors.dim + `  ${baseUrl}/deployments/${deployment}` + colors.reset);
 
-  let result = await testConnection(parsed.baseUrl, apiKey, deployment, apiVersion);
+  let result = await testConnection(baseUrl, apiKey, deployment, apiVersion);
 
   if (result.ok) {
     console.log(colors.green + '✓ Connection successful!' + colors.reset);
@@ -249,7 +323,7 @@ async function main() {
 
     console.log();
     console.log(colors.blue + 'Retrying...' + colors.reset);
-    result = await testConnection(parsed.baseUrl, apiKey, deployment, apiVersion);
+    result = await testConnection(baseUrl, apiKey, deployment, apiVersion);
 
     if (result.ok) {
       console.log(colors.green + '✓ Connection successful!' + colors.reset);
@@ -260,29 +334,32 @@ async function main() {
     }
   }
 
-  // Create config
+  // Create config - preserve existing settings like agents, permissions
   const configPath = getConfigPath();
   fs.mkdirSync(path.dirname(configPath), { recursive: true });
 
-  const config = {
-    $schema: 'https://opencode.ai/config.json',
-    model: `azure/${deployment}`,
-    provider: {
-      azure: {
-        npm: '@ai-sdk/azure',
-        name: 'Azure OpenAI',
-        options: {
-          baseURL: parsed.baseUrl,
-          apiKey: apiKey,
-          useDeploymentBasedUrls: true,
-          apiVersion: apiVersion,
-        },
-        models: {
-          [deployment]: {
-            name: deployment,
-            limit: { context: 200000, output: 16384 },
-          },
-        },
+  // Start with existing config or empty object
+  const config = existingConfig || {};
+
+  // Update schema and model
+  config.$schema = 'https://opencode.ai/config.json';
+  config.model = `azure/${deployment}`;
+
+  // Update Azure provider settings
+  config.provider = config.provider || {};
+  config.provider.azure = {
+    npm: '@ai-sdk/azure',
+    name: 'Azure OpenAI',
+    options: {
+      baseURL: baseUrl,
+      apiKey: apiKey,
+      useDeploymentBasedUrls: true,
+      apiVersion: apiVersion,
+    },
+    models: {
+      [deployment]: {
+        name: deployment,
+        limit: { context: 200000, output: 16384 },
       },
     },
   };
@@ -292,6 +369,17 @@ async function main() {
   console.log();
   console.log(colors.green + '✓ Configuration saved!' + colors.reset);
   console.log(colors.dim + `  ${configPath}` + colors.reset);
+
+  // Show what was preserved
+  if (existingConfig) {
+    const preserved = [];
+    if (existingConfig.agent) preserved.push('agents');
+    if (existingConfig.permission) preserved.push('permissions');
+    if (preserved.length > 0) {
+      console.log(colors.dim + `  Preserved: ${preserved.join(', ')}` + colors.reset);
+    }
+  }
+
   console.log();
   console.log('─'.repeat(40));
   console.log(colors.green + 'You\'re all set! Run:' + colors.reset);
