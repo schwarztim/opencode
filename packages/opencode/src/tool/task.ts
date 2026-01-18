@@ -124,6 +124,16 @@ export const TaskTool = Tool.define("task", async (ctx) => {
         "Build": "build",
         "Plan": "plan",
         "General": "general",
+        "worker": "general",
+        "Worker": "general",
+        "task": "general",
+        "Task": "general",
+        "default": "general",
+        "Default": "general",
+        "assistant": "general",
+        "Assistant": "general",
+        "agent": "general",
+        "Agent": "general",
       }
       const resolvedAgentType = agentAliases[params.subagent_type] ?? params.subagent_type
 
