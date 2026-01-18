@@ -33,13 +33,10 @@ const logo = `
        |_|                 Azure Edition
 `;
 
-// Get config path
 function getConfigPath() {
-  const home = os.homedir();
-  return path.join(home, '.config', 'opencode', 'opencode.json');
+  return path.join(os.homedir(), '.config', 'opencode', 'opencode.json');
 }
 
-// Readline interface
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -55,13 +52,11 @@ function ask(question, defaultValue = '') {
 function askPassword(question) {
   return new Promise((resolve) => {
     process.stdout.write(`${question}: `);
-
     if (process.stdin.isTTY) {
       const stdin = process.stdin;
       stdin.setRawMode(true);
       stdin.resume();
       stdin.setEncoding('utf8');
-
       let password = '';
       const onData = (char) => {
         if (char === '\n' || char === '\r' || char === '\u0004') {
@@ -84,13 +79,61 @@ function askPassword(question) {
   });
 }
 
-async function testConnection(endpoint, apiKey, deployment) {
-  return new Promise((resolve) => {
-    const url = new URL(`${endpoint}/deployments/${deployment}/chat/completions?api-version=2024-12-01-preview`);
+// Parse Azure endpoint - handles both full URL and base URL
+function parseAzureEndpoint(input) {
+  const result = {
+    baseUrl: '',
+    deployment: 'model-router',
+    apiVersion: '2025-01-01-preview', // Latest API version
+  };
 
+  try {
+    const url = new URL(input);
+
+    // Extract deployment from path: /openai/deployments/{deployment}/...
+    const deploymentMatch = url.pathname.match(/\/deployments\/([^/]+)/);
+    if (deploymentMatch) {
+      result.deployment = deploymentMatch[1];
+    }
+
+    // Extract api-version from query params
+    const apiVersion = url.searchParams.get('api-version');
+    if (apiVersion) {
+      result.apiVersion = apiVersion;
+    }
+
+    // Build base URL: https://host/openai
+    const pathParts = url.pathname.split('/');
+    const openaiIndex = pathParts.indexOf('openai');
+    if (openaiIndex !== -1) {
+      url.pathname = pathParts.slice(0, openaiIndex + 1).join('/');
+    } else {
+      url.pathname = '/openai';
+    }
+    url.search = '';
+    result.baseUrl = url.toString().replace(/\/$/, '');
+
+  } catch {
+    // Not a valid URL, assume it's just the host
+    let cleaned = input.replace(/\/$/, '');
+    if (!cleaned.startsWith('https://')) {
+      cleaned = 'https://' + cleaned;
+    }
+    if (!cleaned.endsWith('/openai')) {
+      cleaned += '/openai';
+    }
+    result.baseUrl = cleaned;
+  }
+
+  return result;
+}
+
+async function testConnection(endpoint, apiKey, deployment, apiVersion) {
+  return new Promise((resolve) => {
+    const url = new URL(`${endpoint}/deployments/${deployment}/chat/completions?api-version=${apiVersion}`);
     const options = {
       hostname: url.hostname,
-      port: url.port || 443,
+      port: 443,
       path: url.pathname + url.search,
       method: 'POST',
       headers: {
@@ -111,7 +154,7 @@ async function testConnection(endpoint, apiKey, deployment) {
     });
 
     req.on('error', (e) => resolve({ ok: false, status: 0, body: e.message }));
-    req.setTimeout(10000, () => {
+    req.setTimeout(15000, () => {
       req.destroy();
       resolve({ ok: false, status: 0, body: 'Timeout' });
     });
@@ -127,39 +170,37 @@ async function main() {
   console.log('─'.repeat(40));
   console.log();
 
-  // Endpoint
-  console.log('Enter your Azure OpenAI endpoint');
-  console.log(colors.dim + '(from Azure Portal → Azure OpenAI → Keys and Endpoint)' + colors.reset);
-  let endpoint = await ask('Endpoint');
+  // Endpoint - accepts full URL or just the base
+  console.log('Paste your Azure OpenAI endpoint');
+  console.log(colors.dim + 'Tip: You can paste the full URL from Azure Portal - we\'ll extract what we need' + colors.reset);
+  console.log();
+  const rawEndpoint = await ask('Endpoint');
 
-  if (!endpoint) {
+  if (!rawEndpoint) {
     console.log(colors.red + 'Endpoint is required' + colors.reset);
     process.exit(1);
   }
 
-  endpoint = endpoint.replace(/\/$/, '');
-  if (!endpoint.endsWith('/openai')) endpoint += '/openai';
-
-  console.log();
+  // Parse the endpoint - extracts base URL, deployment, and api-version automatically
+  const parsed = parseAzureEndpoint(rawEndpoint);
 
   // API Key
+  console.log();
   const apiKey = await askPassword('API Key');
   if (!apiKey) {
     console.log(colors.red + 'API Key is required' + colors.reset);
     process.exit(1);
   }
 
-  console.log();
-
-  // Deployment
-  console.log('Enter your deployment name');
-  console.log(colors.dim + '(default: model-router for Azure APIM setups)' + colors.reset);
-  const deployment = await ask('Deployment', 'model-router');
+  // Use auto-detected values
+  let deployment = parsed.deployment;
+  let apiVersion = parsed.apiVersion;
 
   console.log();
   console.log(colors.blue + 'Testing connection...' + colors.reset);
+  console.log(colors.dim + `  ${parsed.baseUrl}/deployments/${deployment}` + colors.reset);
 
-  const result = await testConnection(endpoint, apiKey, deployment);
+  let result = await testConnection(parsed.baseUrl, apiKey, deployment, apiVersion);
 
   if (result.ok) {
     console.log(colors.green + '✓ Connection successful!' + colors.reset);
@@ -173,16 +214,29 @@ async function main() {
         console.log(colors.dim + result.body.slice(0, 200) + colors.reset);
       }
     }
+
+    // Offer to edit settings if connection failed
     console.log();
-    const cont = await ask('Continue anyway? (y/N)', 'N');
-    if (cont.toLowerCase() !== 'y') process.exit(1);
+    console.log(colors.yellow + 'Let\'s try different settings:' + colors.reset);
+    deployment = await ask('Deployment name', deployment);
+    apiVersion = await ask('API Version', apiVersion);
+
+    console.log();
+    console.log(colors.blue + 'Retrying...' + colors.reset);
+    result = await testConnection(parsed.baseUrl, apiKey, deployment, apiVersion);
+
+    if (result.ok) {
+      console.log(colors.green + '✓ Connection successful!' + colors.reset);
+    } else {
+      console.log(colors.red + `✗ Still failing (${result.status || 'error'})` + colors.reset);
+      const cont = await ask('Save config anyway? (y/N)', 'N');
+      if (cont.toLowerCase() !== 'y') process.exit(1);
+    }
   }
 
   // Create config
   const configPath = getConfigPath();
-  const configDir = path.dirname(configPath);
-
-  fs.mkdirSync(configDir, { recursive: true });
+  fs.mkdirSync(path.dirname(configPath), { recursive: true });
 
   const config = {
     $schema: 'https://opencode.ai/config.json',
@@ -192,10 +246,10 @@ async function main() {
         npm: '@ai-sdk/azure',
         name: 'Azure OpenAI',
         options: {
-          baseURL: endpoint,
+          baseURL: parsed.baseUrl,
           apiKey: apiKey,
           useDeploymentBasedUrls: true,
-          apiVersion: '2024-12-01-preview',
+          apiVersion: apiVersion,
         },
         models: {
           [deployment]: {
@@ -210,15 +264,13 @@ async function main() {
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
   console.log();
-  console.log(colors.green + `✓ Configuration saved to ${configPath}` + colors.reset);
+  console.log(colors.green + '✓ Configuration saved!' + colors.reset);
+  console.log(colors.dim + `  ${configPath}` + colors.reset);
   console.log();
-  console.log(colors.blue + "You're all set! Run:" + colors.reset);
+  console.log('─'.repeat(40));
+  console.log(colors.green + 'You\'re all set! Run:' + colors.reset);
   console.log();
-  console.log('    opencode');
-  console.log();
-  console.log(colors.dim + 'Tips:' + colors.reset);
-  console.log('  • View config:  opencode azure status');
-  console.log('  • Reconfigure:  opencode azure');
+  console.log('    ' + colors.blue + 'opencode' + colors.reset);
   console.log();
 
   rl.close();
