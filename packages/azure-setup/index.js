@@ -5,6 +5,7 @@
  *
  * Usage:
  *   npx opencode-azure-setup
+ *   npx opencode-azure-setup -y    # Non-interactive (use existing config)
  *   node install-azure.js
  */
 
@@ -13,6 +14,10 @@ import path from 'path';
 import readline from 'readline';
 import https from 'https';
 import os from 'os';
+
+// Parse args
+const args = process.argv.slice(2);
+const nonInteractive = args.includes('-y') || args.includes('--yes') || args.includes('--non-interactive');
 
 // Colors
 const colors = {
@@ -67,15 +72,22 @@ function getExistingAzureSettings(config) {
   };
 }
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+// Only create readline interface if not in non-interactive mode
+let rl = null;
+function getRl() {
+  if (!rl) {
+    rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout,
+    });
+  }
+  return rl;
+}
 
 function ask(question, defaultValue = '') {
   return new Promise((resolve) => {
     const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
-    rl.question(prompt, (answer) => resolve(answer || defaultValue));
+    getRl().question(prompt, (answer) => resolve(answer || defaultValue));
   });
 }
 
@@ -240,14 +252,29 @@ async function main() {
   // If existing config found, show current values
   if (existingAzure && existingAzure.baseUrl) {
     console.log(colors.green + '✓ Existing configuration found' + colors.reset);
-    console.log(colors.dim + '  Press Enter to keep current values, or type new ones' + colors.reset);
+    if (nonInteractive) {
+      console.log(colors.dim + '  Using existing values (non-interactive mode)' + colors.reset);
+    } else {
+      console.log(colors.dim + '  Press Enter to keep current values, or type new ones' + colors.reset);
+    }
     console.log();
   }
 
   // Endpoint - accepts full URL or just the base
-  let baseUrl, deployment, apiVersion;
+  let baseUrl, deployment, apiVersion, apiKey;
 
-  if (existingAzure?.baseUrl) {
+  // Non-interactive mode with existing config - skip all prompts
+  if (nonInteractive && existingAzure?.baseUrl && existingAzure?.apiKey) {
+    baseUrl = existingAzure.baseUrl;
+    deployment = existingAzure.deployment;
+    apiVersion = existingAzure.apiVersion;
+    apiKey = existingAzure.apiKey;
+    console.log(colors.dim + `  Endpoint: ${baseUrl}` + colors.reset);
+    console.log(colors.dim + `  Deployment: ${deployment}` + colors.reset);
+  } else if (nonInteractive && !existingAzure?.baseUrl) {
+    console.log(colors.red + 'No existing config found. Run without -y flag to configure.' + colors.reset);
+    process.exit(1);
+  } else if (existingAzure?.baseUrl) {
     console.log('Azure OpenAI Endpoint');
     const rawEndpoint = await ask('Endpoint', existingAzure.baseUrl);
 
@@ -262,6 +289,22 @@ async function main() {
       baseUrl = parsed.baseUrl;
       deployment = parsed.deployment;
       apiVersion = parsed.apiVersion;
+    }
+
+    // API Key
+    console.log();
+    apiKey = await askPassword('API Key', existingAzure?.apiKey || '');
+    if (!apiKey) {
+      console.log(colors.red + 'API Key is required' + colors.reset);
+      process.exit(1);
+    }
+
+    // Deployment (only ask if not using existing)
+    if (existingAzure?.deployment && deployment === existingAzure.deployment) {
+      // Keep existing
+    } else {
+      console.log();
+      deployment = await ask('Deployment name', deployment);
     }
   } else {
     console.log('Paste your Azure OpenAI endpoint');
@@ -278,20 +321,15 @@ async function main() {
     baseUrl = parsed.baseUrl;
     deployment = parsed.deployment;
     apiVersion = parsed.apiVersion;
-  }
 
-  // API Key
-  console.log();
-  const apiKey = await askPassword('API Key', existingAzure?.apiKey || '');
-  if (!apiKey) {
-    console.log(colors.red + 'API Key is required' + colors.reset);
-    process.exit(1);
-  }
+    // API Key
+    console.log();
+    apiKey = await askPassword('API Key');
+    if (!apiKey) {
+      console.log(colors.red + 'API Key is required' + colors.reset);
+      process.exit(1);
+    }
 
-  // Deployment (only ask if not using existing)
-  if (existingAzure?.deployment && deployment === existingAzure.deployment) {
-    // Keep existing
-  } else {
     console.log();
     deployment = await ask('Deployment name', deployment);
   }
@@ -315,22 +353,27 @@ async function main() {
       }
     }
 
-    // Offer to edit settings if connection failed
-    console.log();
-    console.log(colors.yellow + 'Let\'s try different settings:' + colors.reset);
-    deployment = await ask('Deployment name', deployment);
-    apiVersion = await ask('API Version', apiVersion);
-
-    console.log();
-    console.log(colors.blue + 'Retrying...' + colors.reset);
-    result = await testConnection(baseUrl, apiKey, deployment, apiVersion);
-
-    if (result.ok) {
-      console.log(colors.green + '✓ Connection successful!' + colors.reset);
+    if (nonInteractive) {
+      // Non-interactive mode - just continue with existing config
+      console.log(colors.yellow + '⚠ Continuing anyway (non-interactive mode)' + colors.reset);
     } else {
-      console.log(colors.red + `✗ Still failing (${result.status || 'error'})` + colors.reset);
-      const cont = await ask('Save config anyway? (y/N)', 'N');
-      if (cont.toLowerCase() !== 'y') process.exit(1);
+      // Offer to edit settings if connection failed
+      console.log();
+      console.log(colors.yellow + 'Let\'s try different settings:' + colors.reset);
+      deployment = await ask('Deployment name', deployment);
+      apiVersion = await ask('API Version', apiVersion);
+
+      console.log();
+      console.log(colors.blue + 'Retrying...' + colors.reset);
+      result = await testConnection(baseUrl, apiKey, deployment, apiVersion);
+
+      if (result.ok) {
+        console.log(colors.green + '✓ Connection successful!' + colors.reset);
+      } else {
+        console.log(colors.red + `✗ Still failing (${result.status || 'error'})` + colors.reset);
+        const cont = await ask('Save config anyway? (y/N)', 'N');
+        if (cont.toLowerCase() !== 'y') process.exit(1);
+      }
     }
   }
 
@@ -421,7 +464,7 @@ async function main() {
   console.log('    ' + colors.blue + 'opencode' + colors.reset);
   console.log();
 
-  rl.close();
+  if (rl) rl.close();
 }
 
 main().catch((err) => {
