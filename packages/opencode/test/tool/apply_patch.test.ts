@@ -378,4 +378,138 @@ describe("tool.apply_patch freeform", () => {
       },
     })
   })
+
+  test("EOF anchor matches from end of file first", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "eof_anchor.txt")
+        // File has duplicate "marker" lines - one in middle, one at end
+        await fs.writeFile(target, "start\nmarker\nmiddle\nmarker\nend\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
+
+        // With EOF anchor, should match the LAST "marker" line, not the first
+        const patchText =
+          "*** Begin Patch\n*** Update File: eof_anchor.txt\n@@\n-marker\n-end\n+marker-changed\n+end\n*** End of File\n*** End Patch"
+
+        await execute({ patchText }, ctx)
+        // First marker unchanged, second marker changed
+        expect(await fs.readFile(target, "utf-8")).toBe("start\nmarker\nmiddle\nmarker-changed\nend\n")
+      },
+    })
+  })
+
+  test("parses heredoc-wrapped patch", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const patchText = `cat <<'EOF'
+*** Begin Patch
+*** Add File: heredoc_test.txt
++heredoc content
+*** End Patch
+EOF`
+
+        await execute({ patchText }, ctx)
+        const content = await fs.readFile(path.join(fixture.path, "heredoc_test.txt"), "utf-8")
+        expect(content).toBe("heredoc content\n")
+      },
+    })
+  })
+
+  test("parses heredoc-wrapped patch without cat", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const patchText = `<<EOF
+*** Begin Patch
+*** Add File: heredoc_no_cat.txt
++no cat prefix
+*** End Patch
+EOF`
+
+        await execute({ patchText }, ctx)
+        const content = await fs.readFile(path.join(fixture.path, "heredoc_no_cat.txt"), "utf-8")
+        expect(content).toBe("no cat prefix\n")
+      },
+    })
+  })
+
+  test("matches with trailing whitespace differences", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "trailing_ws.txt")
+        // File has trailing spaces on some lines
+        await fs.writeFile(target, "line1  \nline2\nline3   \n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
+
+        // Patch doesn't have trailing spaces - should still match via rstrip pass
+        const patchText = "*** Begin Patch\n*** Update File: trailing_ws.txt\n@@\n-line2\n+changed\n*** End Patch"
+
+        await execute({ patchText }, ctx)
+        expect(await fs.readFile(target, "utf-8")).toBe("line1  \nchanged\nline3   \n")
+      },
+    })
+  })
+
+  test("matches with leading whitespace differences", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "leading_ws.txt")
+        // File has leading spaces
+        await fs.writeFile(target, "  line1\nline2\n  line3\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
+
+        // Patch without leading spaces - should match via trim pass
+        const patchText = "*** Begin Patch\n*** Update File: leading_ws.txt\n@@\n-line2\n+changed\n*** End Patch"
+
+        await execute({ patchText }, ctx)
+        expect(await fs.readFile(target, "utf-8")).toBe("  line1\nchanged\n  line3\n")
+      },
+    })
+  })
+
+  test("matches with Unicode punctuation differences", async () => {
+    await using fixture = await tmpdir()
+    const { ctx } = makeCtx()
+
+    await Instance.provide({
+      directory: fixture.path,
+      fn: async () => {
+        const target = path.join(fixture.path, "unicode.txt")
+        // File has fancy Unicode quotes (U+201C, U+201D) and em-dash (U+2014)
+        const leftQuote = "\u201C"
+        const rightQuote = "\u201D"
+        const emDash = "\u2014"
+        await fs.writeFile(target, `He said ${leftQuote}hello${rightQuote}\nsome${emDash}dash\nend\n`, "utf-8")
+        FileTime.read(ctx.sessionID, target)
+
+        // Patch uses ASCII equivalents - should match via normalized pass
+        // The replacement uses ASCII quotes from the patch (not preserving Unicode)
+        const patchText =
+          '*** Begin Patch\n*** Update File: unicode.txt\n@@\n-He said "hello"\n+He said "hi"\n*** End Patch'
+
+        await execute({ patchText }, ctx)
+        // Result has ASCII quotes because that's what the patch specifies
+        expect(await fs.readFile(target, "utf-8")).toBe(`He said "hi"\nsome${emDash}dash\nend\n`)
+      },
+    })
+  })
 })

@@ -55,23 +55,22 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
       await assertExternalDirectory(ctx, filePath)
 
       switch (hunk.type) {
-        case "add":
-          if (hunk.type === "add") {
-            const oldContent = ""
-            const newContent =
-              hunk.contents.length === 0 || hunk.contents.endsWith("\n") ? hunk.contents : `${hunk.contents}\n`
-            const diff = createTwoFilesPatch(filePath, filePath, oldContent, newContent)
+        case "add": {
+          const oldContent = ""
+          const newContent =
+            hunk.contents.length === 0 || hunk.contents.endsWith("\n") ? hunk.contents : `${hunk.contents}\n`
+          const diff = createTwoFilesPatch(filePath, filePath, oldContent, newContent)
 
-            fileChanges.push({
-              filePath,
-              oldContent,
-              newContent,
-              type: "add",
-            })
+          fileChanges.push({
+            filePath,
+            oldContent,
+            newContent,
+            type: "add",
+          })
 
-            totalDiff += diff + "\n"
-          }
+          totalDiff += diff + "\n"
           break
+        }
 
         case "update":
           // Check if file exists for update
@@ -145,11 +144,8 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
     for (const change of fileChanges) {
       switch (change.type) {
         case "add":
-          // Create parent directories
-          const addDir = path.dirname(change.filePath)
-          if (addDir !== "." && addDir !== "/") {
-            await fs.mkdir(addDir, { recursive: true })
-          }
+          // Create parent directories (recursive: true is safe on existing/root dirs)
+          await fs.mkdir(path.dirname(change.filePath), { recursive: true })
           await fs.writeFile(change.filePath, change.newContent, "utf-8")
           changedFiles.push(change.filePath)
           break
@@ -161,14 +157,9 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
 
         case "move":
           if (change.movePath) {
-            // Create parent directories for destination
-            const moveDir = path.dirname(change.movePath)
-            if (moveDir !== "." && moveDir !== "/") {
-              await fs.mkdir(moveDir, { recursive: true })
-            }
-            // Write to new location
+            // Create parent directories (recursive: true is safe on existing/root dirs)
+            await fs.mkdir(path.dirname(change.movePath), { recursive: true })
             await fs.writeFile(change.movePath, change.newContent, "utf-8")
-            // Remove original
             await fs.unlink(change.filePath)
             changedFiles.push(change.movePath)
           }
