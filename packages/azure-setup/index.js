@@ -431,6 +431,7 @@ async function main() {
     // Add to config
     config.mcp = config.mcp || {};
     config.mcp['mcp-marketplace'] = {
+      type: 'local',
       command: 'node',
       args: [mcpPath],
     };
