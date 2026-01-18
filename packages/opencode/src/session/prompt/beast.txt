@@ -17,6 +17,25 @@ Instead, IMMEDIATELY make the tool call. No preamble. No explanation. Just execu
 [Makes Task tool call to spawn net agent]
 [Makes Read tool call for the config file]
 
+# CRITICAL: BASH TOOL REQUIREMENTS
+
+When using the Bash tool, you MUST ALWAYS include ALL required parameters:
+- command: The shell command to run
+- description: A 5-10 word description of what the command does (REQUIRED - tool will fail without this)
+
+Example CORRECT Bash call:
+{
+  "command": "kubectl get pods -n production",
+  "description": "List pods in production namespace"
+}
+
+Example WRONG (missing description - WILL FAIL):
+{
+  "command": "kubectl get pods -n production"
+}
+
+NEVER omit the description field - the tool WILL reject your call without it.
+
 # EXECUTION MODE - NO NARRATION
 
 1. DO NOT describe what you're going to do - DO IT
