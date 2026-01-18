@@ -364,6 +364,35 @@ async function main() {
     },
   };
 
+  // Install and configure MCP Marketplace
+  console.log();
+  console.log(colors.blue + 'Setting up MCP Marketplace...' + colors.reset);
+
+  const mcpDir = path.join(os.homedir(), '.config', 'opencode', 'mcps');
+  fs.mkdirSync(mcpDir, { recursive: true });
+
+  try {
+    const { execFileSync } = await import('child_process');
+
+    // Install mcp-marketplace package globally
+    execFileSync('npm', ['install', '-g', 'opencode-mcp-marketplace'], { stdio: 'pipe' });
+
+    // Find the installed package path
+    const npmRoot = execFileSync('npm', ['root', '-g'], { encoding: 'utf-8' }).trim();
+    const mcpPath = path.join(npmRoot, 'opencode-mcp-marketplace', 'dist', 'index.js');
+
+    // Add to config
+    config.mcp = config.mcp || {};
+    config.mcp['mcp-marketplace'] = {
+      command: 'node',
+      args: [mcpPath],
+    };
+
+    console.log(colors.green + '✓ MCP Marketplace installed!' + colors.reset);
+  } catch (e) {
+    console.log(colors.yellow + '⚠ MCP Marketplace install skipped (npm not available or failed)' + colors.reset);
+  }
+
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
 
   console.log();
