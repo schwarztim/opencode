@@ -6,6 +6,7 @@ import { Identifier } from "../id/id"
 import { Plugin } from "../plugin"
 import { Instance } from "../project/instance"
 import { Wildcard } from "../util/wildcard"
+import { Flag } from "../flag/flag"
 
 export namespace Permission {
   const log = Log.create({ service: "permission" })
@@ -106,6 +107,15 @@ export namespace Permission {
     messageID: Info["messageID"]
     metadata: Info["metadata"]
   }) {
+    // Skip all permission checks if dangerously-skip-permissions is enabled
+    if (Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS) {
+      log.info("skipping permission check (dangerously-skip-permissions enabled)", {
+        type: input.type,
+        pattern: input.pattern,
+      })
+      return
+    }
+
     const { pending, approved } = state()
     log.info("asking", {
       sessionID: input.sessionID,
