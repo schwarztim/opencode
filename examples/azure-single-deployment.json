@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "azure/gpt-4o",
+  "provider": {
+    "azure": {
+      "npm": "@ai-sdk/azure",
+      "name": "Azure OpenAI",
+      "options": {
+        "baseURL": "https://your-resource.openai.azure.com/openai",
+        "apiKey": "YOUR_API_KEY_HERE",
+        "useDeploymentBasedUrls": true,
+        "apiVersion": "2024-12-01-preview"
+      },
+      "models": {
+        "gpt-4o": {
+          "name": "GPT-4o",
+          "limit": {
+            "context": 128000,
+            "output": 16384
+          }
+        }
+      }
+    }
+  }
+}
