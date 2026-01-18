@@ -1,6 +1,7 @@
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
 import { Config } from "@/config/config"
+import { Flag } from "@/flag/flag"
 import { Identifier } from "@/id/id"
 import { Instance } from "@/project/instance"
 import { Storage } from "@/storage/storage"
@@ -118,6 +119,15 @@ export namespace PermissionNext {
       ruleset: Ruleset,
     }),
     async (input) => {
+      // Skip all permission checks if dangerously-skip-permissions is enabled
+      if (Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS) {
+        log.info("skipping permission check (dangerously-skip-permissions enabled)", {
+          permission: input.permission,
+          patterns: input.patterns,
+        })
+        return
+      }
+
       const s = await state()
       const { ruleset, ...request } = input
       for (const pattern of request.patterns ?? []) {

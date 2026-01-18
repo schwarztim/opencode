@@ -91,8 +91,19 @@ export const RunCommand = cmd({
         type: "string",
         describe: "model variant (provider-specific reasoning effort, e.g., high, max, minimal)",
       })
+      .option("dangerously-skip-permissions", {
+        type: "boolean",
+        describe: "skip all permission prompts (use with caution)",
+        default: false,
+      })
   },
   handler: async (args) => {
+    // Handle --dangerously-skip-permissions flag
+    if (args["dangerously-skip-permissions"]) {
+      Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = true
+      process.env.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = "true"
+    }
+
     let message = [...args.message, ...(args["--"] || [])]
       .map((arg) => (arg.includes(" ") ? `"${arg.replace(/"/g, '\\"')}"` : arg))
       .join(" ")

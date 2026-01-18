@@ -6,6 +6,7 @@ import path from "path"
 import { UI } from "@/cli/ui"
 import { iife } from "@/util/iife"
 import { Log } from "@/util/log"
+import { Flag } from "@/flag/flag"
 import { withNetworkOptions, resolveNetworkOptions } from "@/cli/network"
 import type { Event } from "@opencode-ai/sdk/v2"
 import type { EventSource } from "./context/sdk"
@@ -71,8 +72,19 @@ export const TuiThreadCommand = cmd({
       .option("agent", {
         type: "string",
         describe: "agent to use",
+      })
+      .option("dangerously-skip-permissions", {
+        type: "boolean",
+        describe: "skip all permission prompts (use with caution)",
+        default: false,
       }),
   handler: async (args) => {
+    // Handle --dangerously-skip-permissions flag
+    if (args["dangerously-skip-permissions"]) {
+      Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = true
+      process.env.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = "true"
+    }
+
     // Resolve relative paths against PWD to preserve behavior when using --cwd flag
     const baseCwd = process.env.PWD ?? process.cwd()
     const cwd = args.project ? path.resolve(baseCwd, args.project) : process.cwd()
