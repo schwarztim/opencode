@@ -296,6 +296,39 @@ export namespace SessionPrompt {
         !["tool-calls", "unknown"].includes(lastAssistant.finish) &&
         lastUser.id < lastAssistant.id
       ) {
+        // Auto-continue when dangerously-skip-permissions is enabled and model stopped with a question
+        if (Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS) {
+          const lastText = msgs
+            .findLast((m) => m.info.role === "assistant")
+            ?.parts.findLast((p) => p.type === "text") as MessageV2.TextPart | undefined
+          const text = lastText?.text?.trim() ?? ""
+          // Check if the output ends with a question mark or common question patterns
+          const endsWithQuestion = text.endsWith("?") ||
+            /(?:would you like|should I|do you want|shall I|can I|may I|ready to)\s*[\w\s]*\??$/i.test(text)
+
+          if (endsWithQuestion) {
+            log.info("auto-continuing (dangerously-skip-permissions enabled, detected question)", { sessionID })
+            // Create a synthetic user message to continue
+            const continueMsg: MessageV2.User = {
+              id: Identifier.ascending("message"),
+              sessionID,
+              role: "user",
+              time: { created: Date.now() },
+              agent: lastUser.agent,
+              model: lastUser.model,
+            }
+            await Session.updateMessage(continueMsg)
+            await Session.updatePart({
+              id: Identifier.ascending("part"),
+              messageID: continueMsg.id,
+              sessionID,
+              type: "text",
+              text: "Yes, proceed. Continue autonomously without asking further questions.",
+              synthetic: true,
+            } satisfies MessageV2.TextPart)
+            continue
+          }
+        }
         log.info("exiting loop", { sessionID })
         break
       }
