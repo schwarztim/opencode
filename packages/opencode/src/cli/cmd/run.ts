@@ -99,7 +99,7 @@ export const RunCommand = cmd({
   },
   handler: async (args) => {
     // Handle --dangerously-skip-permissions flag
-    if (args["dangerously-skip-permissions"]) {
+    if (args.dangerouslySkipPermissions) {
       Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = true
       process.env.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS = "true"
     }

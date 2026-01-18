@@ -1,6 +1,6 @@
 {
   "name": "opencode-azure-setup",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "Easy Azure OpenAI setup for OpenCode",
   "type": "module",
   "main": "index.js",
