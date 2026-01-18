@@ -368,18 +368,22 @@ async function main() {
   console.log();
   console.log(colors.blue + 'Setting up MCP Marketplace...' + colors.reset);
 
-  const mcpDir = path.join(os.homedir(), '.config', 'opencode', 'mcps');
+  const mcpDir = path.join(os.homedir(), '.config', 'opencode', 'mcps', 'mcp-marketplace');
   fs.mkdirSync(mcpDir, { recursive: true });
 
   try {
     const { execFileSync } = await import('child_process');
 
-    // Install mcp-marketplace package globally
-    execFileSync('npm', ['install', '-g', 'opencode-mcp-marketplace'], { stdio: 'pipe' });
+    // Initialize package.json if not exists
+    const pkgPath = path.join(mcpDir, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      fs.writeFileSync(pkgPath, JSON.stringify({ name: 'opencode-mcps', version: '1.0.0', type: 'module' }, null, 2));
+    }
 
-    // Find the installed package path
-    const npmRoot = execFileSync('npm', ['root', '-g'], { encoding: 'utf-8' }).trim();
-    const mcpPath = path.join(npmRoot, 'opencode-mcp-marketplace', 'dist', 'index.js');
+    // Install mcp-marketplace package locally (no sudo needed)
+    execFileSync('npm', ['install', 'opencode-mcp-marketplace@latest'], { cwd: mcpDir, stdio: 'pipe' });
+
+    const mcpPath = path.join(mcpDir, 'node_modules', 'opencode-mcp-marketplace', 'dist', 'index.js');
 
     // Add to config
     config.mcp = config.mcp || {};
@@ -391,6 +395,7 @@ async function main() {
     console.log(colors.green + '✓ MCP Marketplace installed!' + colors.reset);
   } catch (e) {
     console.log(colors.yellow + '⚠ MCP Marketplace install skipped (npm not available or failed)' + colors.reset);
+    console.log(colors.dim + '  You can install manually: npm install -g opencode-mcp-marketplace' + colors.reset);
   }
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
