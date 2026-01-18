@@ -6,16 +6,15 @@
  * Usage:
  *   npx opencode-azure-setup
  *   node install-azure.js
- *   bun install-azure.js
  */
 
-const fs = require('fs');
-const path = require('path');
-const readline = require('readline');
-const https = require('https');
-const http = require('http');
+import fs from 'fs';
+import path from 'path';
+import readline from 'readline';
+import https from 'https';
+import os from 'os';
 
-// Colors (works on most terminals)
+// Colors
 const colors = {
   blue: '\x1b[34m',
   green: '\x1b[32m',
@@ -34,16 +33,13 @@ const logo = `
        |_|                 Azure Edition
 `;
 
-// Get config path based on OS
+// Get config path
 function getConfigPath() {
-  const home = process.env.HOME || process.env.USERPROFILE;
-  if (process.platform === 'win32') {
-    return path.join(home, '.config', 'opencode', 'opencode.json');
-  }
+  const home = os.homedir();
   return path.join(home, '.config', 'opencode', 'opencode.json');
 }
 
-// Create readline interface
+// Readline interface
 const rl = readline.createInterface({
   input: process.stdin,
   output: process.stdout,
@@ -51,12 +47,8 @@ const rl = readline.createInterface({
 
 function ask(question, defaultValue = '') {
   return new Promise((resolve) => {
-    const prompt = defaultValue
-      ? `${question} [${defaultValue}]: `
-      : `${question}: `;
-    rl.question(prompt, (answer) => {
-      resolve(answer || defaultValue);
-    });
+    const prompt = defaultValue ? `${question} [${defaultValue}]: ` : `${question}: `;
+    rl.question(prompt, (answer) => resolve(answer || defaultValue));
   });
 }
 
@@ -64,7 +56,6 @@ function askPassword(question) {
   return new Promise((resolve) => {
     process.stdout.write(`${question}: `);
 
-    // Try to hide input on Unix systems
     if (process.stdin.isTTY) {
       const stdin = process.stdin;
       stdin.setRawMode(true);
@@ -79,10 +70,8 @@ function askPassword(question) {
           console.log();
           resolve(password);
         } else if (char === '\u0003') {
-          // Ctrl+C
           process.exit();
         } else if (char === '\u007F' || char === '\b') {
-          // Backspace
           password = password.slice(0, -1);
         } else {
           password += char;
@@ -90,7 +79,6 @@ function askPassword(question) {
       };
       stdin.on('data', onData);
     } else {
-      // Fallback for non-TTY
       rl.question('', resolve);
     }
   });
@@ -118,20 +106,11 @@ async function testConnection(endpoint, apiKey, deployment) {
 
     const req = https.request(options, (res) => {
       let data = '';
-      res.on('data', (chunk) => data += chunk);
-      res.on('end', () => {
-        resolve({
-          ok: res.statusCode === 200,
-          status: res.statusCode,
-          body: data
-        });
-      });
+      res.on('data', (chunk) => (data += chunk));
+      res.on('end', () => resolve({ ok: res.statusCode === 200, status: res.statusCode, body: data }));
     });
 
-    req.on('error', (e) => {
-      resolve({ ok: false, status: 0, body: e.message });
-    });
-
+    req.on('error', (e) => resolve({ ok: false, status: 0, body: e.message }));
     req.setTimeout(10000, () => {
       req.destroy();
       resolve({ ok: false, status: 0, body: 'Timeout' });
@@ -148,7 +127,7 @@ async function main() {
   console.log('─'.repeat(40));
   console.log();
 
-  // Get Azure endpoint
+  // Endpoint
   console.log('Enter your Azure OpenAI endpoint');
   console.log(colors.dim + '(from Azure Portal → Azure OpenAI → Keys and Endpoint)' + colors.reset);
   let endpoint = await ask('Endpoint');
@@ -158,15 +137,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Ensure endpoint format
   endpoint = endpoint.replace(/\/$/, '');
-  if (!endpoint.endsWith('/openai')) {
-    endpoint += '/openai';
-  }
+  if (!endpoint.endsWith('/openai')) endpoint += '/openai';
 
   console.log();
 
-  // Get API key
+  // API Key
   const apiKey = await askPassword('API Key');
   if (!apiKey) {
     console.log(colors.red + 'API Key is required' + colors.reset);
@@ -175,7 +151,7 @@ async function main() {
 
   console.log();
 
-  // Get deployment name
+  // Deployment
   console.log('Enter your deployment name');
   console.log(colors.dim + '(default: model-router for Azure APIM setups)' + colors.reset);
   const deployment = await ask('Deployment', 'model-router');
@@ -199,9 +175,7 @@ async function main() {
     }
     console.log();
     const cont = await ask('Continue anyway? (y/N)', 'N');
-    if (cont.toLowerCase() !== 'y') {
-      process.exit(1);
-    }
+    if (cont.toLowerCase() !== 'y') process.exit(1);
   }
 
   // Create config
@@ -226,10 +200,7 @@ async function main() {
         models: {
           [deployment]: {
             name: deployment,
-            limit: {
-              context: 200000,
-              output: 16384,
-            },
+            limit: { context: 200000, output: 16384 },
           },
         },
       },
