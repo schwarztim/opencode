@@ -3,6 +3,7 @@ import path from "path"
 import * as fs from "fs/promises"
 import { ApplyPatchTool } from "../../src/tool/apply_patch"
 import { Instance } from "../../src/project/instance"
+import { FileTime } from "../../src/file/time"
 import { tmpdir } from "../fixture/fixture"
 
 const baseCtx = {
@@ -50,13 +51,13 @@ describe("tool.apply_patch freeform", () => {
 
   test("rejects invalid patch format", async () => {
     const { ctx } = makeCtx()
-    await expect(execute({ patchText: "invalid patch" }, ctx)).rejects.toThrow("Failed to parse patch")
+    await expect(execute({ patchText: "invalid patch" }, ctx)).rejects.toThrow("apply_patch verification failed")
   })
 
   test("rejects empty patch", async () => {
     const { ctx } = makeCtx()
     const emptyPatch = "*** Begin Patch\n*** End Patch"
-    await expect(execute({ patchText: emptyPatch }, ctx)).rejects.toThrow("No file changes found in patch")
+    await expect(execute({ patchText: emptyPatch }, ctx)).rejects.toThrow("patch rejected: empty patch")
   })
 
   test("applies add/update/delete in one patch", async () => {
@@ -70,15 +71,17 @@ describe("tool.apply_patch freeform", () => {
         const deletePath = path.join(fixture.path, "delete.txt")
         await fs.writeFile(modifyPath, "line1\nline2\n", "utf-8")
         await fs.writeFile(deletePath, "obsolete\n", "utf-8")
+        FileTime.read(ctx.sessionID, modifyPath)
+        FileTime.read(ctx.sessionID, deletePath)
 
         const patchText =
           "*** Begin Patch\n*** Add File: nested/new.txt\n+created\n*** Delete File: delete.txt\n*** Update File: modify.txt\n@@\n-line2\n+changed\n*** End Patch"
 
         const result = await execute({ patchText }, ctx)
 
-        expect(result.title).toContain("files changed")
-        expect(result.output).toContain("Patch applied successfully")
-        expect(result.metadata.diff).toContain("diff")
+        expect(result.title).toContain("Success. Updated the following files")
+        expect(result.output).toContain("Success. Updated the following files")
+        expect(result.metadata.diff).toContain("Index:")
         expect(calls.length).toBe(1)
 
         const added = await fs.readFile(path.join(fixture.path, "nested", "new.txt"), "utf-8")
@@ -98,6 +101,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "multi.txt")
         await fs.writeFile(target, "line1\nline2\nline3\nline4\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText =
           "*** Begin Patch\n*** Update File: multi.txt\n@@\n-line2\n+changed2\n@@\n-line4\n+changed4\n*** End Patch"
@@ -118,6 +122,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "insert_only.txt")
         await fs.writeFile(target, "alpha\nomega\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText = "*** Begin Patch\n*** Update File: insert_only.txt\n@@\n alpha\n+beta\n omega\n*** End Patch"
 
@@ -137,6 +142,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "no_newline.txt")
         await fs.writeFile(target, "no newline at end", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText =
           "*** Begin Patch\n*** Update File: no_newline.txt\n@@\n-no newline at end\n+first line\n+second line\n*** End Patch"
@@ -160,6 +166,7 @@ describe("tool.apply_patch freeform", () => {
         const original = path.join(fixture.path, "old", "name.txt")
         await fs.mkdir(path.dirname(original), { recursive: true })
         await fs.writeFile(original, "old content\n", "utf-8")
+        FileTime.read(ctx.sessionID, original)
 
         const patchText =
           "*** Begin Patch\n*** Update File: old/name.txt\n*** Move to: renamed/dir/name.txt\n@@\n-old content\n+new content\n*** End Patch"
@@ -186,6 +193,7 @@ describe("tool.apply_patch freeform", () => {
         await fs.mkdir(path.dirname(destination), { recursive: true })
         await fs.writeFile(original, "from\n", "utf-8")
         await fs.writeFile(destination, "existing\n", "utf-8")
+        FileTime.read(ctx.sessionID, original)
 
         const patchText =
           "*** Begin Patch\n*** Update File: old/name.txt\n*** Move to: renamed/dir/name.txt\n@@\n-from\n+new\n*** End Patch"
@@ -225,7 +233,9 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const patchText = "*** Begin Patch\n*** Update File: missing.txt\n@@\n-nope\n+better\n*** End Patch"
 
-        await expect(execute({ patchText }, ctx)).rejects.toThrow("File not found or is directory")
+        await expect(execute({ patchText }, ctx)).rejects.toThrow(
+          "apply_patch verification failed: Failed to read file to update",
+        )
       },
     })
   })
@@ -270,7 +280,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const patchText = "*** Begin Patch\n*** Frobnicate File: foo\n*** End Patch"
 
-        await expect(execute({ patchText }, ctx)).rejects.toThrow("Failed to parse patch")
+        await expect(execute({ patchText }, ctx)).rejects.toThrow("apply_patch verification failed")
       },
     })
   })
@@ -284,10 +294,11 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "modify.txt")
         await fs.writeFile(target, "line1\nline2\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText = "*** Begin Patch\n*** Update File: modify.txt\n@@\n-missing\n+changed\n*** End Patch"
 
-        await expect(execute({ patchText }, ctx)).rejects.toThrow("Failed to apply update")
+        await expect(execute({ patchText }, ctx)).rejects.toThrow("apply_patch verification failed")
         expect(await fs.readFile(target, "utf-8")).toBe("line1\nline2\n")
       },
     })
@@ -320,6 +331,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "tail.txt")
         await fs.writeFile(target, "alpha\nlast\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText = "*** Begin Patch\n*** Update File: tail.txt\n@@\n-last\n+end\n*** End of File\n*** End Patch"
 
@@ -338,6 +350,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "two_chunks.txt")
         await fs.writeFile(target, "a\nb\nc\nd\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText = "*** Begin Patch\n*** Update File: two_chunks.txt\n@@\n-b\n+B\n\n-d\n+D\n*** End Patch"
 
@@ -356,6 +369,7 @@ describe("tool.apply_patch freeform", () => {
       fn: async () => {
         const target = path.join(fixture.path, "multi_ctx.txt")
         await fs.writeFile(target, "fn a\nx=10\ny=2\nfn b\nx=10\ny=20\n", "utf-8")
+        FileTime.read(ctx.sessionID, target)
 
         const patchText = "*** Begin Patch\n*** Update File: multi_ctx.txt\n@@ fn b\n-x=10\n+x=11\n*** End Patch"
 

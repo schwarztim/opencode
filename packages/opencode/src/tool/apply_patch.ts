@@ -28,11 +28,15 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
       const parseResult = Patch.parsePatch(params.patchText)
       hunks = parseResult.hunks
     } catch (error) {
-      throw new Error(`Failed to parse patch: ${error}`)
+      throw new Error(`apply_patch verification failed: ${error}`)
     }
 
     if (hunks.length === 0) {
-      throw new Error("No file changes found in patch")
+      const normalized = params.patchText.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim()
+      if (normalized === "*** Begin Patch\n*** End Patch") {
+        throw new Error("patch rejected: empty patch")
+      }
+      throw new Error("apply_patch verification failed: no hunks found")
     }
 
     // Validate file paths and check permissions
@@ -54,7 +58,8 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
         case "add":
           if (hunk.type === "add") {
             const oldContent = ""
-            const newContent = hunk.contents
+            const newContent =
+              hunk.contents.length === 0 || hunk.contents.endsWith("\n") ? hunk.contents : `${hunk.contents}\n`
             const diff = createTwoFilesPatch(filePath, filePath, oldContent, newContent)
 
             fileChanges.push({
@@ -72,7 +77,7 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
           // Check if file exists for update
           const stats = await fs.stat(filePath).catch(() => null)
           if (!stats || stats.isDirectory()) {
-            throw new Error(`File not found or is directory: ${filePath}`)
+            throw new Error(`apply_patch verification failed: Failed to read file to update: ${filePath}`)
           }
 
           // Read file and update time tracking (like edit tool does)
@@ -85,7 +90,7 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
             const fileUpdate = Patch.deriveNewContentsFromChunks(filePath, hunk.chunks)
             newContent = fileUpdate.content
           } catch (error) {
-            throw new Error(`Failed to apply update to ${filePath}: ${error}`)
+            throw new Error(`apply_patch verification failed: ${error}`)
           }
 
           const diff = createTwoFilesPatch(filePath, filePath, oldContent, newContent)
@@ -107,7 +112,9 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
         case "delete":
           // Check if file exists for deletion
           await FileTime.assert(ctx.sessionID, filePath)
-          const contentToDelete = await fs.readFile(filePath, "utf-8")
+          const contentToDelete = await fs.readFile(filePath, "utf-8").catch((error) => {
+            throw new Error(`apply_patch verification failed: ${error}`)
+          })
           const deleteDiff = createTwoFilesPatch(filePath, filePath, contentToDelete, "")
 
           fileChanges.push({
@@ -186,15 +193,24 @@ export const ApplyPatchTool = Tool.define("apply_patch", {
     }
 
     // Generate output summary
-    const relativePaths = changedFiles.map((filePath) => path.relative(Instance.worktree, filePath))
-    const summary = `${fileChanges.length} files changed`
+    const summaryLines = fileChanges.map((change) => {
+      if (change.type === "add") {
+        return `A ${path.relative(Instance.worktree, change.filePath)}`
+      }
+      if (change.type === "delete") {
+        return `D ${path.relative(Instance.worktree, change.filePath)}`
+      }
+      const target = change.movePath ?? change.filePath
+      return `M ${path.relative(Instance.worktree, target)}`
+    })
+    const summary = `Success. Updated the following files:\n${summaryLines.join("\n")}`
 
     return {
       title: summary,
       metadata: {
         diff: totalDiff,
       },
-      output: `Patch applied successfully. ${summary}:\n${relativePaths.map((p) => `  ${p}`).join("\n")}`,
+      output: summary,
     }
   },
 })
