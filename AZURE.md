@@ -33,6 +33,24 @@ opencode azure        # Reconfigure Azure settings
 opencode azure status # View current config
 ```
 
+## Skip Permission Prompts
+
+For a fully autonomous experience (no permission popups):
+
+```bash
+# Via CLI flag
+opencode --dangerously-skip-permissions
+
+# Via environment variable
+export OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS=true
+opencode
+
+# For run command
+opencode run --dangerously-skip-permissions "your message"
+```
+
+**Warning:** This skips ALL permission checks. Use with caution.
+
 ## Troubleshooting
 
 | Problem | Solution |
@@ -70,7 +88,7 @@ Config lives at `~/.config/opencode/opencode.json`
         "baseURL": "https://YOUR-RESOURCE.openai.azure.com/openai",
         "apiKey": "YOUR_API_KEY",
         "useDeploymentBasedUrls": true,
-        "apiVersion": "2024-12-01-preview"
+        "apiVersion": "2025-01-01-preview"
       },
       "models": {
         "model-router": {
