@@ -1,5 +1,6 @@
 import { Bus } from "@/bus"
 import { BusEvent } from "@/bus/bus-event"
+import { Flag } from "@/flag/flag"
 import { Identifier } from "@/id/id"
 import { Instance } from "@/project/instance"
 import { Log } from "@/util/log"
@@ -99,6 +100,15 @@ export namespace Question {
     questions: Info[]
     tool?: { messageID: string; callID: string }
   }): Promise<Answer[]> {
+    // Auto-select first option for each question when skip-permissions is enabled
+    if (Flag.OPENCODE_DANGEROUSLY_SKIP_PERMISSIONS) {
+      log.info("auto-answering questions (dangerously-skip-permissions enabled)", {
+        questions: input.questions.length,
+      })
+      // Return first option for each question
+      return input.questions.map((q) => [q.options[0]?.label ?? "yes"])
+    }
+
     const s = await state()
     const id = Identifier.ascending("question")
 
