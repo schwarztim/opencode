@@ -432,8 +432,7 @@ async function main() {
     config.mcp = config.mcp || {};
     config.mcp['mcp-marketplace'] = {
       type: 'local',
-      command: 'node',
-      args: [mcpPath],
+      command: ['node', mcpPath],
     };
 
     console.log(colors.green + '✓ MCP Marketplace installed!' + colors.reset);
