@@ -4,28 +4,22 @@
   "provider": {
     "azure": {
       "npm": "@ai-sdk/azure",
-      "name": "Azure Model Router",
+      "name": "Azure OpenAI",
       "options": {
-        "baseURL": "https://your-resource.openai.azure.com/openai",
-        "apiKey": "YOUR_API_KEY_HERE",
+        "baseURL": "https://YOUR-RESOURCE.openai.azure.com/openai",
+        "apiKey": "YOUR_API_KEY",
         "useDeploymentBasedUrls": true,
         "apiVersion": "2024-12-01-preview"
       },
       "models": {
         "model-router": {
-          "name": "Model Router (Auto Claude/GPT)",
+          "name": "model-router",
           "limit": {
             "context": 200000,
             "output": 16384
           }
         }
       }
-    }
-  },
-  "mcp": {
-    "example-mcp": {
-      "type": "local",
-      "command": ["node", "/path/to/your/mcp/index.js"]
     }
   }
 }

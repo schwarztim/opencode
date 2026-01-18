@@ -1,0 +1,25 @@
+{
+  "name": "opencode-azure-setup",
+  "version": "1.0.0",
+  "description": "Easy Azure OpenAI setup for OpenCode",
+  "main": "index.js",
+  "bin": {
+    "opencode-azure-setup": "./index.js"
+  },
+  "scripts": {
+    "test": "node index.js"
+  },
+  "keywords": [
+    "opencode",
+    "azure",
+    "openai",
+    "ai",
+    "setup"
+  ],
+  "author": "schwarztim",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/schwarztim/opencode.git"
+  }
+}
