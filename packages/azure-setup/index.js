@@ -447,6 +447,65 @@ async function main() {
   console.log(colors.green + '✓ Configuration saved!' + colors.reset);
   console.log(colors.dim + `  ${configPath}` + colors.reset);
 
+  // Install opencode binary
+  console.log();
+  console.log(colors.blue + 'Installing opencode binary...' + colors.reset);
+
+  try {
+    const platform = process.platform === 'win32' ? 'windows' : process.platform;
+    const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+    const binaryName = `opencode-${platform}-${arch}`;
+
+    // Get latest release from GitHub
+    const releaseUrl = 'https://api.github.com/repos/schwarztim/opencode/releases/latest';
+    const releaseRes = await fetch(releaseUrl, {
+      headers: { 'User-Agent': 'opencode-azure-setup' },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!releaseRes.ok) throw new Error(`Failed to fetch release: ${releaseRes.status}`);
+    const release = await releaseRes.json();
+
+    // Find the matching asset (handles -bin suffix for non-windows)
+    const asset = release.assets.find(a =>
+      a.name === binaryName ||
+      a.name === `${binaryName}.exe` ||
+      a.name === `${binaryName}-bin`
+    );
+    if (!asset) throw new Error(`No binary found for ${binaryName}`);
+
+    console.log(colors.dim + `  Downloading ${asset.name} (${(asset.size / 1024 / 1024).toFixed(1)} MB)...` + colors.reset);
+
+    // Download binary
+    const binRes = await fetch(asset.browser_download_url, {
+      headers: { 'User-Agent': 'opencode-azure-setup' },
+      signal: AbortSignal.timeout(120000),
+    });
+
+    if (!binRes.ok) throw new Error(`Failed to download: ${binRes.status}`);
+    const binData = await binRes.arrayBuffer();
+
+    // Install to ~/.local/bin
+    const binDir = path.join(os.homedir(), '.local', 'bin');
+    fs.mkdirSync(binDir, { recursive: true });
+
+    const binPath = path.join(binDir, platform === 'windows' ? 'opencode.exe' : 'opencode');
+    fs.writeFileSync(binPath, Buffer.from(binData));
+    fs.chmodSync(binPath, 0o755);
+
+    console.log(colors.green + '✓ opencode installed!' + colors.reset);
+    console.log(colors.dim + `  ${binPath}` + colors.reset);
+
+    // Check if ~/.local/bin is in PATH
+    const pathDirs = (process.env.PATH || '').split(path.delimiter);
+    if (!pathDirs.includes(binDir)) {
+      console.log(colors.yellow + `  Add to PATH: export PATH="$HOME/.local/bin:$PATH"` + colors.reset);
+    }
+  } catch (e) {
+    console.log(colors.yellow + '⚠ Binary install skipped: ' + e.message + colors.reset);
+    console.log(colors.dim + '  You can install manually from: https://github.com/schwarztim/opencode/releases' + colors.reset);
+  }
+
   // Show what was preserved
   if (existingConfig) {
     const preserved = [];
