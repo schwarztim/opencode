@@ -469,6 +469,74 @@ export namespace Config {
   export const Mcp = z.discriminatedUnion("type", [McpLocal, McpRemote])
   export type Mcp = z.infer<typeof Mcp>
 
+  /**
+   * Translate Claude Code MCP format to OpenCode format.
+   * Claude Code uses: { command: "node", args: ["/path"], env: {...} }
+   * OpenCode uses:    { type: "local", command: ["node", "/path"], environment: {...} }
+   */
+  export function translateMcpConfig(mcp: Record<string, unknown>): Record<string, unknown> {
+    const result: Record<string, unknown> = {}
+
+    for (const [name, config] of Object.entries(mcp)) {
+      if (!config || typeof config !== "object") {
+        result[name] = config
+        continue
+      }
+
+      const entry = config as Record<string, unknown>
+
+      // Already in OpenCode format (has type field)
+      if ("type" in entry) {
+        result[name] = entry
+        continue
+      }
+
+      // Translate Claude Code format to OpenCode format
+      const translated: Record<string, unknown> = {}
+
+      // Determine type based on presence of url vs command
+      if ("url" in entry && typeof entry.url === "string") {
+        // Remote MCP
+        translated.type = "remote"
+        translated.url = entry.url
+        if (entry.headers) translated.headers = entry.headers
+        if (entry.oauth !== undefined) translated.oauth = entry.oauth
+      } else if ("command" in entry) {
+        // Local MCP - convert command + args to command array
+        translated.type = "local"
+
+        if (typeof entry.command === "string") {
+          // Claude Code format: command is string, args is array
+          const args = Array.isArray(entry.args) ? entry.args : []
+          translated.command = [entry.command, ...args]
+        } else if (Array.isArray(entry.command)) {
+          // Already an array, just use it
+          translated.command = entry.command
+        }
+
+        // Translate env -> environment
+        if (entry.env && typeof entry.env === "object") {
+          translated.environment = entry.env
+        }
+        if (entry.environment && typeof entry.environment === "object") {
+          translated.environment = entry.environment
+        }
+      } else {
+        // Unknown format, pass through
+        result[name] = entry
+        continue
+      }
+
+      // Copy common fields
+      if (entry.enabled !== undefined) translated.enabled = entry.enabled
+      if (entry.timeout !== undefined) translated.timeout = entry.timeout
+
+      result[name] = translated
+    }
+
+    return result
+  }
+
   export const PermissionAction = z.enum(["ask", "allow", "deny"]).meta({
     ref: "PermissionActionConfig",
   })
@@ -1185,6 +1253,11 @@ export namespace Config {
         path: configFilepath,
         message: `\n--- JSONC Input ---\n${text}\n--- Errors ---\n${errorDetails}\n--- End ---`,
       })
+    }
+
+    // Translate Claude Code MCP format to OpenCode format before validation
+    if (data.mcp && typeof data.mcp === "object") {
+      data.mcp = translateMcpConfig(data.mcp as Record<string, unknown>)
     }
 
     const parsed = Info.safeParse(data)
